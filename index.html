@@ -5,25 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Holubník</title>
     <style>
+        html * {
+            font-family: JetBrains Mono;
+            color: white
+        }
+
         body {
             justify-content: center;
             align-items: center;
+            text-align: center;
             height: 100vh;
-            font-family: JetBrains Mono;
             background-color: rgb(58, 58, 60);
             color: white;
         }
+
         p {
             background-color: grey;
         }
+
         input {
             background-color: grey;
+        }
+
+        button {
+            background-color: rgb(65, 64, 64);
         }
     </style>
 </head>
 <body>
     <h1>Digitálna Komunikácia cez Zvukové Vlny</h1>
-    <p id="messages" style="font-size: 2em; white-space: pre-line; border: 1px solid black; padding: 4em; width: 70%;"></p>
     <input type="text" id="message" style="font-size: 2em; width: 70%; color: white" />
     <button id="send" style="font-size: 2em;">Send</button>
 
