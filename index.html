@@ -1,19 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="sk">
 <head>
-	<title>GitWeb</title>
-	<style>
-		body {
-			font-family: Arial, sans-serif;
-			text-align: center;
-		}
-		h1 {
-			color: lightgreen;
-		}
-	</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holubník</title>
+    <style>
+        body {
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: JetBrains Mono;
+            background-color: rgb(58, 58, 60);
+            color: white;
+        }
+        p {
+            background-color: grey;
+        }
+        input {
+            background-color: grey;
+        }
+    </style>
 </head>
 <body>
-	<h1>GitWeb</h1>
-	<p>Under construction...</p>
+    <h1>Digitálna Komunikácia cez Zvukové Vlny</h1>
+    <p id="messages" style="font-size: 2em; white-space: pre-line; border: 1px solid black; padding: 4em; width: 70%;"></p>
+    <input type="text" id="message" style="font-size: 2em; width: 70%; color: white" />
+    <button id="send" style="font-size: 2em;">Send</button>
+
+    <script>
+        let audioBuffer;
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                const audioContext = new AudioContext();
+                const source = audioContext.createMediaStreamSource(stream);
+                const processor = audioContext.createScriptProcessor(16384, 1, 1);
+
+                source.connect(processor);
+
+                processor.onaudioprocess = e => {
+                    const inputBuffer = e.inputBuffer.getChannelData(0);
+                    if (!audioBuffer) {
+                        audioBuffer = audioContext.createBuffer(1, 16384, 48000);
+                    }
+                    audioBuffer.copyToChannel(inputBuffer, 0);
+                };
+
+                let playing = false;
+                document.getElementById('send').addEventListener('click', () => {
+                    if (playing) {
+                        source.disconnect();
+                        playing = false;
+                    } else {
+                        source.connect(audioContext.destination);
+                        playing = true;
+                    }
+                });
+            });
+    </script>
 </body>
 </html>
