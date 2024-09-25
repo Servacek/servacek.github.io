@@ -137,7 +137,6 @@ async function startRecording() {
 
                 // Start playback
                 source.start();
-                source.onended =
             }
         }, 100);
     // });
