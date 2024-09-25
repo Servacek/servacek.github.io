@@ -1,71 +1,28 @@
 <!DOCTYPE html>
-<html lang="sk">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="index.css">
     <title>Holubník</title>
-    <style>
-        html * {
-            font-family: JetBrains Mono;
-            color: white
-        }
-
-        body {
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            height: 100vh;
-            background-color: rgb(58, 58, 60);
-            color: white;
-        }
-
-        p {
-            background-color: grey;
-        }
-
-        input {
-            background-color: grey;
-        }
-
-        button {
-            background-color: rgb(65, 64, 64);
-        }
-    </style>
 </head>
 <body>
-    <h1>Digitálna Komunikácia cez Zvukové Vlny</h1>
-    <input type="text" id="message" style="font-size: 2em; width: 70%; color: white" />
-    <button id="send" style="font-size: 2em;">Send</button>
+    <section class="msger">
+        <header class="msger-header">
+            <div class="msger-header-title">Holubník Web</div>
+            <button id="config-button" class="msger-config-btn">Nastavenia</button>
+        </header>
 
-    <script>
-        let audioBuffer;
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(stream => {
-                const audioContext = new AudioContext();
-                const source = audioContext.createMediaStreamSource(stream);
-                const processor = audioContext.createScriptProcessor(16384, 1, 1);
+        <main class="msger-chat">
 
-                source.connect(processor);
+        </main>
 
-                processor.onaudioprocess = e => {
-                    const inputBuffer = e.inputBuffer.getChannelData(0);
-                    if (!audioBuffer) {
-                        audioBuffer = audioContext.createBuffer(1, 16384, 48000);
-                    }
-                    audioBuffer.copyToChannel(inputBuffer, 0);
-                };
+        <form class="msger-inputarea">
+            <input type="text" class="msger-input" placeholder="Zadajte vašu správu...">
+            <button id="submit-button"type="submit" class="msger-send-btn">Odoslať</button>
+        </form>
+    </section>
 
-                let playing = false;
-                document.getElementById('send').addEventListener('click', () => {
-                    if (playing) {
-                        source.disconnect();
-                        playing = false;
-                    } else {
-                        source.connect(audioContext.destination);
-                        playing = true;
-                    }
-                });
-            });
-    </script>
+    <script type=module src="index.js"></script>
 </body>
 </html>
