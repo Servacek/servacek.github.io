@@ -18,6 +18,7 @@ function calculateToneWaveForFrequency(frequency, duration = CONST.DATA_FRAME_DU
     return t.map(x => (CONST.AMPLITUDE * Math.sin(CONST.TWOPI * frequency * x + shift))).map(x => CONST.INTEGER_TYPE.from([x])[0]);
 }
 
+// TODO: Do not divide an array with an number = NaN
 function calculateWaveformForFrequencies(frequencies, duration = CONST.DATA_FRAME_DURATION) {
     const waveform = frequencies.reduce((acc, frequency) => acc + calculateToneWaveForFrequency(frequency, duration), new CONST.INTEGER_TYPE(0));
     return waveform / Math.max(frequencies.length, 1);

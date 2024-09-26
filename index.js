@@ -1,6 +1,6 @@
 
 
-import {writeString, txBuffer, encoderFSK} from './modulator.js';
+import {writeString, txBuffer, encoderFSK, encoderMFSK} from './modulator.js';
 import * as CONST from './constants.js';
 
 const msgerForm = get(".msger-inputarea");
@@ -94,39 +94,24 @@ async function startRecording() {
 
         setInterval(() => {
             if (txBuffer.length > 0) {
-                console.info("BUFFER")
-                // const audioBufferData = txBuffer.shift();
-                // const max = Math.max(...audioBufferData);
-                // const min = Math.min(...audioBufferData);
-                // const range = max - min;
-                // const normalizedBufferData = audioBufferData.map(x => (x - min) / range * 2 - 1);
-                // console.info(normalizedBufferData)
-                // // const float32Array = audioBuffer.getChannelData(0);
-                // // float32Array.set(audioBufferData);
-                // if (source.buffer === null) {
-                //     source.buffer = audioContext.createBuffer(CONST.OUTPUT_CHANNELS, normalizedBufferData.length, audioContext.sampleRate);;
-                // }
-
-                // source.buffer.copyToChannel(Float32Array.from(normalizedBufferData), 0, 0);
-                // source.connect(audioContext.destination);
-                // source.start();
-
-                // 1. Create an AudioContext
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
                 // Assuming `waveformArray` is the array containing your sine waveform data
                 // For example, it should be a Float32Array of sample values between -1 and 1
                 let waveformArray = txBuffer.shift();
-                const max = Math.max(...waveformArray);
-                const min = Math.min(...waveformArray);
-                const range = max - min;
-                waveformArray = waveformArray.map(x => (x - min) / range * 2 - 1);
+                console.info(Array.isArray(waveformArray));
+                console.info(waveformArray);
+                let max = -Infinity;
+                for(let i = 0; i < waveformArray.length; i++ ) {
+                    if (waveformArray[i] > max) {
+                        max = waveformArray[i];
+                    }
+                }
+                waveformArray = waveformArray.map(x => x / max);
 
-                // 2. Create an AudioBuffer
-                const sampleRate = 44100; // Sample rate of the audio (44.1kHz is standard)
-                const buffer = audioContext.createBuffer(1, waveformArray.length, sampleRate);
+                console.log(waveformArray, JSON.stringify(waveformArray))
 
-                // 3. Copy your waveform data into the buffer
+                const buffer = audioContext.createBuffer(1, waveformArray.length, CONST.SAMPLING_FREQUENCY);
                 const channelData = buffer.getChannelData(0); // Get the first (and only) channel
                 channelData.set(waveformArray); // Copy the sine wave data into the buffer
 
