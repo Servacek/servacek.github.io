@@ -76,7 +76,7 @@ async function startRecording() {
 // startRecording();
 
 // let rxBuffer;
-// navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+// navigator.mediaDevices.getUserMedia({ audio: false, video: false })
 //     .then(stream => {
 //         const audioContext = new AudioContext();
 //         const source = audioContext.createBufferSource(stream);
@@ -92,39 +92,39 @@ async function startRecording() {
 //             rxBuffer.copyToChannel(inputBuffer, 0);
 //         };
 
-//         setInterval(() => {
-//             if (txBuffer.length > 0) {
-//                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        setInterval(() => {
+            if (txBuffer.length > 0) {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-//                 // Assuming `waveformArray` is the array containing your sine waveform data
-//                 // For example, it should be a Float32Array of sample values between -1 and 1
-//                 let waveformArray = txBuffer.shift();
-//                 console.info(Array.isArray(waveformArray));
-//                 console.info(waveformArray);
-//                 let max = -Infinity;
-//                 for(let i = 0; i < waveformArray.length; i++ ) {
-//                     if (waveformArray[i] > max) {
-//                         max = waveformArray[i];
-//                     }
-//                 }
-//                 waveformArray = waveformArray.map(x => x / max);
+                // Assuming `waveformArray` is the array containing your sine waveform data
+                // For example, it should be a Float32Array of sample values between -1 and 1
+                let waveformArray = txBuffer.shift();
+                console.info(Array.isArray(waveformArray));
+                console.info(waveformArray);
+                let max = -Infinity;
+                for(let i = 0; i < waveformArray.length; i++ ) {
+                    if (waveformArray[i] > max) {
+                        max = waveformArray[i];
+                    }
+                }
+                waveformArray = waveformArray.map(x => x / max);
 
-//                 console.log(waveformArray, JSON.stringify(waveformArray))
+                console.log(waveformArray, JSON.stringify(waveformArray))
 
-//                 const buffer = audioContext.createBuffer(1, waveformArray.length, CONST.SAMPLING_FREQUENCY);
-//                 const channelData = buffer.getChannelData(0); // Get the first (and only) channel
-//                 channelData.set(waveformArray); // Copy the sine wave data into the buffer
+                const buffer = audioContext.createBuffer(1, waveformArray.length, CONST.SAMPLING_FREQUENCY);
+                const channelData = buffer.getChannelData(0); // Get the first (and only) channel
+                channelData.set(waveformArray); // Copy the sine wave data into the buffer
 
-//                 // 4. Create a source and play the buffer
-//                 const source = audioContext.createBufferSource();
-//                 source.buffer = buffer;
-//                 source.connect(audioContext.destination);
+                // 4. Create a source and play the buffer
+                const source = audioContext.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioContext.destination);
 
-//                 // Start playback
-//                 source.start();
-//             }
-//         }, 100);
-//     });
+                // Start playback
+                source.start();
+            }
+        }, 100);
+    // });
 
 msgerForm.addEventListener("submit", event => {
     event.preventDefault();
