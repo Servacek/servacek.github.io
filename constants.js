@@ -21,7 +21,7 @@ export const DATA_FRAME_DURATION = 0.2; // Seconds
 export const CONTROL_FRAME_DURATION = 2; // Seconds
 export const MAX_FRAME_DURATION = 3; // Seconds
 export const BITS_PER_FRAME = 4;  // Max is 8 we will have 2^BITS_PER_FRAME number of tones.
-export const FRAME_SPACING_DURATION = DATA_FRAME_DURATION / 4;
+export const FRAME_SPACING_DURATION = 0;//DATA_FRAME_DURATION / 4;
 // How many tones we will be using for transmitting actual data
 // This doesn't count tones used for controlling the transmission.
 export const TONES_COUNT = 2 ** BITS_PER_FRAME;
@@ -32,7 +32,7 @@ export const TONES_COUNT = 2 ** BITS_PER_FRAME;
 // TODO: This should be set according to the device used by the client.
 export const MIN_TX_FREQUENCY = 1200; // used as the base frequency for frames
 export const MAX_TX_FREQUENCY = 2500;
-export const FREQUENCY_DECIMAL = (MAX_TX_FREQUENCY - MIN_TX_FREQUENCY) / TONES_COUNT;
+export const FREQUENCY_DECIMAL = Math.floor((MAX_TX_FREQUENCY - MIN_TX_FREQUENCY) / TONES_COUNT / 10) * 10
 export const MAX_USED_TX_FREQUENCY = FREQUENCY_DECIMAL * TONES_COUNT;
 if (MAX_USED_TX_FREQUENCY > MAX_TX_FREQUENCY) {
     throw new Error(`MAX_USED_TX_FREQUENCY (${MAX_USED_TX_FREQUENCY}) > MAX_TX_FREQUENCY (${MAX_TX_FREQUENCY})`);

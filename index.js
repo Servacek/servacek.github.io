@@ -75,22 +75,22 @@ async function startRecording() {
 
 // startRecording();
 
-// let rxBuffer;
-// navigator.mediaDevices.getUserMedia({ audio: true })
-//     .then(stream => {
-        //const audioContext = new AudioContext();
-        //const source = audioContext.createBufferSource(stream);
-        // const processor = audioContext.createScriptProcessor(CONST.SAMPLE_BLOCK_SIZE, CONST.INPUT_CHANNELS, CONST.OUTPUT_CHANNELS);
+let rxBuffer;
+navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+    .then(stream => {
+        const audioContext = new AudioContext();
+        const source = audioContext.createBufferSource(stream);
+        const processor = audioContext.createScriptProcessor(CONST.SAMPLE_BLOCK_SIZE, CONST.INPUT_CHANNELS, CONST.OUTPUT_CHANNELS);
 
-        // source.connect(processor);
+        source.connect(processor);
 
-        // processor.onaudioprocess = e => {
-        //     const inputBuffer = e.inputBuffer.getChannelData(0);
-        //     if (!rxBuffer) {
-        //         rxBuffer = audioContext.createBuffer(CONST.INPUT_CHANNELS, 16384, CONST.SAMPLING_FREQUENCY);
-        //     }
-        //     rxBuffer.copyToChannel(inputBuffer, 0);
-        // };
+        processor.onaudioprocess = e => {
+            const inputBuffer = e.inputBuffer.getChannelData(0);
+            if (!rxBuffer) {
+                rxBuffer = audioContext.createBuffer(CONST.INPUT_CHANNELS, 16384, CONST.SAMPLING_FREQUENCY);
+            }
+            rxBuffer.copyToChannel(inputBuffer, 0);
+        };
 
         setInterval(() => {
             if (txBuffer.length > 0) {
@@ -124,18 +124,18 @@ async function startRecording() {
                 source.start();
             }
         }, 100);
-    // });
+    });
 
-msgerForm.addEventListener("click", event => {
+msgerForm.addEventListener("submit", event => {
     event.preventDefault();
 
     const msgText = msgerInput.value;
     if (!msgText) return;
 
+    writeString(msgText, encoderFSK);
+
     appendMessage(PERSON_NAME, "right", msgText);
     msgerInput.value = "";
-
-    writeString(msgText, encoderFSK);
 });
 
 function appendMessage(name, side, text) {

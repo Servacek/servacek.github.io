@@ -18,17 +18,24 @@ function calculateToneWaveForFrequency(frequency, duration = CONST.DATA_FRAME_DU
     return t.map(x => (CONST.AMPLITUDE * Math.sin(CONST.TWOPI * frequency * x + shift))).map(x => CONST.INTEGER_TYPE.from([x])[0]);
 }
 
-// TODO: Do not divide an array with an number = NaN
 function calculateWaveformForFrequencies(frequencies, duration = CONST.DATA_FRAME_DURATION) {
-    const waveform = frequencies.reduce((acc, frequency) => acc + calculateToneWaveForFrequency(frequency, duration), new CONST.INTEGER_TYPE(0));
-    return waveform / Math.max(frequencies.length, 1);
+    const waveform = [];
+    const mf = Math.max(frequencies.length, 1);
+    for (let frequency of frequencies) {
+        const samples = calculateToneWaveForFrequency(frequency, duration)
+        for (let sample of samples) {
+            waveform.push(sample / Math.max(...samples));
+        }
+    }
+
+    console.log("WAVEFORM:", waveform);
+    return waveform
 }
 
 export function encoderFSK(bits) {
     const toneWaves = [calculateToneWaveForFrequency(CONST.START_TONE_FREQUENCY, CONST.CONTROL_FRAME_DURATION)];
     toneWaves.push(calculateToneWaveForFrequency(0, CONST.FRAME_SPACING_DURATION));
     for (let ibit = 0; ibit < bits.length; ibit += CONST.BITS_PER_FRAME) {
-        console.info("FRAME", ibit, bits, bits.length, bits.length, CONST.BITS_PER_FRAME)
         const dataFrameDecimal = parseInt(bits.substring(ibit, ibit + CONST.BITS_PER_FRAME), 2);
         const frequency = CONST.MIN_TX_FREQUENCY + (dataFrameDecimal * CONST.FREQUENCY_DECIMAL);
         toneWaves.push(calculateToneWaveForFrequency(frequency));
@@ -40,6 +47,7 @@ export function encoderFSK(bits) {
 }
 
 export function encoderMFSK(bits) {
+    var waveform = []
     txBuffer.push(calculateToneWaveForFrequency(CONST.START_TONE_FREQUENCY, CONST.DATA_FRAME_DURATION));
     for (let ibit = 0; ibit < bits.length; ibit += CONST.MAX_BITS_PER_FRAME) {
         const dataFrequencies = [];
@@ -49,8 +57,12 @@ export function encoderMFSK(bits) {
                 dataFrequencies.push(CONST.MIN_TX_FREQUENCY + (1 + i) * CONST.FREQUENCY_DECIMAL);
             }
         }
-        txBuffer.push(calculateWaveformForFrequencies(dataFrequencies, CONST.DATA_FRAME_DURATION));
+        console.log("FREQUENCIES:", dataFrequencies)
+
+        let frameWaveform = calculateWaveformForFrequencies(dataFrequencies, CONST.DATA_FRAME_DURATION);
+        waveform = waveform.map((e, i) => e + frameWaveform[i]);
     }
+    txBuffer.push(waveform);
     txBuffer.push(calculateToneWaveForFrequency(CONST.END_TONE_FREQUENCY, CONST.DATA_FRAME_DURATION));
 }
 
