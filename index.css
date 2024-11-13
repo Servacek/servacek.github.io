@@ -71,6 +71,7 @@ body {
     align-items: center;
     height: 100vh;
     background-image: var(--body-bg);
+    position: relative;
 }
 
 .msger {
@@ -226,6 +227,22 @@ body {
     cursor: pointer;
     transition: background 0.23s;
     overflow: hidden;
+}
+
+.msger-attachment-btn {
+    margin-right: 10px;
+    background: var(--inputbar-area);
+    color: var(--msger-send-button-fg);
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.23s;
+    padding:0;
+}
+
+.msger-attachment-btn:hover {
+    margin-right: 10px;
+    background: var(--msger-input-bg);
+    border-radius: 10%;
 }
 
 .msger-config-btn {

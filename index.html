@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale = 1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="stylesheet" href="index.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <title>Holubník</title>
+    <script>
+        // Make the dark-theme the default one
+        document.documentElement.classList.add('dark-scheme');
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
 </head>
 <body>
@@ -18,6 +23,7 @@
         </main>
 
         <form class="msger-inputarea">
+            <button id="attachment-button" type="attachment" class="msger-attachment-btn"><i class="fas fa-plus"></i></button>
             <input type="text" class="msger-input" placeholder="Zadajte správu...">
             <button id="submit-button"type="submit" class="msger-send-btn">Odoslať</button>
         </form>
@@ -31,8 +37,5 @@
         console.log(wasmExports.add(10, 20))
     }, 3000);
 </script> -->
-<script>
-    document.documentElement.classList.add('dark-scheme');
-</script>
 <script type=module src="index.js"></script>
 </html>
