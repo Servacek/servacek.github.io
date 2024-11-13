@@ -2,10 +2,23 @@
 // import * as CONST from 'constants.js';
 import * as CONST from './constants.js';
 
-export const txBuffer = [];
 
+// Place to store modulated messages in a form of waveforms.
+export const messageQueue = [];
+
+///////////////////////////////////////////
+
+/**
+ * Converts a string to a binary representation.
+ *
+ * @param {string} string - The string to encode.
+ * @param {string} [encoding=CONST.DEFAULT_STRING_ENCODING] - The encoding to use.
+ * @returns {string} A string of 0s and 1s representing the binary representation of the input string.
+ */
 function encodeStringToBits(string, encoding = CONST.DEFAULT_STRING_ENCODING) {
-    return Array.from({length: string.length}).map((_, i) => string.charCodeAt(i).toString(2).padStart(8, '0')).join('');
+    return Array.from(new TextEncoder(encoding).encode(string))
+        .map(byte => byte.toString(2).padStart(8, '0'))
+        .join('');
 }
 
 function bitsToFrame(bits) {
@@ -20,7 +33,6 @@ function calculateToneWaveForFrequency(frequency, duration = CONST.DATA_FRAME_DU
 
 function calculateWaveformForFrequencies(frequencies, duration = CONST.DATA_FRAME_DURATION) {
     const waveform = [];
-    const mf = Math.max(frequencies.length, 1);
     for (let frequency of frequencies) {
         const samples = calculateToneWaveForFrequency(frequency, duration)
         for (let sample of samples) {
@@ -28,11 +40,12 @@ function calculateWaveformForFrequencies(frequencies, duration = CONST.DATA_FRAM
         }
     }
 
-    console.log("WAVEFORM:", waveform);
     return waveform
 }
 
-export function encoderFSK(bits) {
+/// Modulation Protocols (MP)
+
+export function FSK(bits) {
     const toneWaves = [calculateToneWaveForFrequency(CONST.START_TONE_FREQUENCY, CONST.CONTROL_FRAME_DURATION)];
     toneWaves.push(calculateToneWaveForFrequency(0, CONST.FRAME_SPACING_DURATION));
     for (let ibit = 0; ibit < bits.length; ibit += CONST.BITS_PER_FRAME) {
@@ -42,37 +55,41 @@ export function encoderFSK(bits) {
         toneWaves.push(calculateToneWaveForFrequency(0, CONST.FRAME_SPACING_DURATION));
     }
     toneWaves.push(calculateToneWaveForFrequency(CONST.END_TONE_FREQUENCY, CONST.CONTROL_FRAME_DURATION));
-    const waveform = toneWaves.reduce((acc, toneWave) => acc.concat(toneWave), []);
-    txBuffer.push(waveform);
+    return toneWaves.reduce((acc, toneWave) => acc.concat(toneWave), []);
 }
 
-export function encoderMFSK(bits) {
-    var waveform = []
-    txBuffer.push(calculateToneWaveForFrequency(CONST.START_TONE_FREQUENCY, CONST.DATA_FRAME_DURATION));
-    for (let ibit = 0; ibit < bits.length; ibit += CONST.MAX_BITS_PER_FRAME) {
-        const dataFrequencies = [];
-        const frame = bitsToFrame(bits.substring(ibit, ibit + CONST.MAX_BITS_PER_FRAME));
-        for (let i = 0; i < frame.length; i++) {
-            if (frame[i] === '1') {
-                dataFrequencies.push(CONST.MIN_TX_FREQUENCY + (1 + i) * CONST.FREQUENCY_DECIMAL);
-            }
-        }
-        console.log("FREQUENCIES:", dataFrequencies)
 
-        let frameWaveform = calculateWaveformForFrequencies(dataFrequencies, CONST.DATA_FRAME_DURATION);
-        waveform = waveform.map((e, i) => e + frameWaveform[i]);
-    }
-    txBuffer.push(waveform);
-    txBuffer.push(calculateToneWaveForFrequency(CONST.END_TONE_FREQUENCY, CONST.DATA_FRAME_DURATION));
-}
+/// NEEDS SOME DEBUGGING
+// export function MFSK(bits) {
+//     var waveform = []
+//     messageQueue.push(calculateToneWaveForFrequency(CONST.START_TONE_FREQUENCY, CONST.DATA_FRAME_DURATION));
+//     for (let ibit = 0; ibit < bits.length; ibit += CONST.MAX_BITS_PER_FRAME) {
+//         const dataFrequencies = [];
+//         const frame = bitsToFrame(bits.substring(ibit, ibit + CONST.MAX_BITS_PER_FRAME));
+//         for (let i = 0; i < frame.length; i++) {
+//             if (frame[i] === '1') {
+//                 dataFrequencies.push(CONST.MIN_TX_FREQUENCY + (1 + i) * CONST.FREQUENCY_DECIMAL);
+//             }
+//         }
+//         console.log("FREQUENCIES:", dataFrequencies)
 
-export function write(bits, audioEncoder) {
+//         let frameWaveform = calculateWaveformForFrequencies(dataFrequencies, CONST.DATA_FRAME_DURATION);
+//         waveform = waveform.map((e, i) => e + frameWaveform[i]);
+//     }
+//     messageQueue.push(waveform);
+//     messageQueue.push(calculateToneWaveForFrequency(CONST.END_TONE_FREQUENCY, CONST.DATA_FRAME_DURATION));
+// }
+
+////////
+
+export function modulateBitsToWaveform(bits, modulationProtocol) {
     if (!bits) {
         throw new Error('Parameter \'bits\' must not be empty.');
     }
-    return audioEncoder(bits);
+
+    return modulationProtocol(bits);
 }
 
-export function writeString(string, audioEncoder, encoding = CONST.DEFAULT_STRING_ENCODING) {
-    return write(encodeStringToBits(string, encoding), audioEncoder);
+export function modulateStringToWaveform(string, modulationProtocol) {
+    return modulateBitsToWaveform(encodeStringToBits(string), modulationProtocol);
 }

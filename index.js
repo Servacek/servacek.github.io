@@ -1,16 +1,23 @@
 
 
-import {writeString, txBuffer, encoderFSK, encoderMFSK} from './modulator.js';
+import {modulateStringToWaveform, messageQueue, FSK} from './modulator.js';
 import * as CONST from './constants.js';
 
 const msgerForm = get(".msger-inputarea");
 const msgerInput = get(".msger-input");
 const msgerChat = get(".msger-chat");
 
+const ALIGMENT_RIGHT = "right"
+const ALIGMENT_LEFT  = "left";
 
-// Icons made by Freepik from www.flaticon.com
-const BOT_NAME = "BOT";
-const PERSON_NAME = "Ja";
+const MODULATION_PROTOCOL = FSK;
+
+////////////////////
+
+var messagesToSend = [];
+var currentlySendingMessage = null;
+
+////////////////////
 
 async function startRecording() {
     const audioContext = new AudioContext();
@@ -54,9 +61,9 @@ async function startRecording() {
 
     const playBuffer = () => {
         console.info("BUFFER PLAYED");
-        if (txBuffer.length > 0) {
+        if (messageQueue.length > 0) {
             console.info("PLAYING AUDIO")
-            const buffer = txBuffer.shift();
+            const buffer = messageQueue.shift();
             const max = Math.max(...buffer);
             const min = Math.min(...buffer);
             const range = max - min;
@@ -71,6 +78,38 @@ async function startRecording() {
     };
 
     setInterval(playBuffer, 1000);
+}
+
+function sendNextMessage() {
+    if (currentlySendingMessage) {
+        return // We are already sending something
+    }
+
+    const nextMessage = messagesToSend.shift();
+    if (nextMessage) {
+        // normalize our message waveform
+        const nextMessageWaveformMax = max(nextMessage.waveform);
+        const nextMessageWaveform = nextMessage.waveform.map(x => x / nextMessageWaveformMax);
+
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const buffer = audioContext.createBuffer(1, nextMessageWaveform.length, CONST.SAMPLING_FREQUENCY);
+        const channelData = buffer.getChannelData(0); // Get the first (and only) channel
+        channelData.set(nextMessageWaveform); // Copy the sine wave data into the buffer
+
+        // 4. Create a source and play the buffer
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContext.destination);
+
+        // Start playback
+        source.start();
+        currentlySendingMessage = nextMessage;
+        source.onended = () => {
+            currentlySendingMessage.dispatchEvent(new Event("sent"));
+            currentlySendingMessage = null;
+            sendNextMessage(nextMessage);
+        };
+    }
 }
 
 // startRecording();
@@ -92,74 +131,146 @@ async function startRecording() {
 //             rxBuffer.copyToChannel(inputBuffer, 0);
 //         };
 
-        setInterval(() => {
-            if (txBuffer.length > 0) {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // setInterval(() => {
+        //     if (messageQueue.length > 0) {
+        //         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-                // Assuming `waveformArray` is the array containing your sine waveform data
-                // For example, it should be a Float32Array of sample values between -1 and 1
-                let waveformArray = txBuffer.shift();
-                console.info(Array.isArray(waveformArray));
-                console.info(waveformArray);
-                let max = -Infinity;
-                for(let i = 0; i < waveformArray.length; i++ ) {
-                    if (waveformArray[i] > max) {
-                        max = waveformArray[i];
-                    }
-                }
-                waveformArray = waveformArray.map(x => x / max);
+        //         // Assuming `waveformArray` is the array containing your sine waveform data
+        //         // For example, it should be a Float32Array of sample values between -1 and 1
+        //         let waveformArray = messageQueue.shift();
+        //         console.info(Array.isArray(waveformArray));
+        //         console.info(waveformArray);
 
-                console.log(waveformArray, JSON.stringify(waveformArray))
+        //         waveformArray = waveformArray.map(x => x / max(waveformArray));
 
-                const buffer = audioContext.createBuffer(1, waveformArray.length, CONST.SAMPLING_FREQUENCY);
-                const channelData = buffer.getChannelData(0); // Get the first (and only) channel
-                channelData.set(waveformArray); // Copy the sine wave data into the buffer
+        //         console.log(waveformArray, JSON.stringify(waveformArray))
 
-                // 4. Create a source and play the buffer
-                const source = audioContext.createBufferSource();
-                source.buffer = buffer;
-                source.connect(audioContext.destination);
+        //         const buffer = audioContext.createBuffer(1, waveformArray.length, CONST.SAMPLING_FREQUENCY);
+        //         const channelData = buffer.getChannelData(0); // Get the first (and only) channel
+        //         channelData.set(waveformArray); // Copy the sine wave data into the buffer
 
-                // Start playback
-                source.start();
-            }
-        }, 100);
+        //         // 4. Create a source and play the buffer
+        //         const source = audioContext.createBufferSource();
+        //         source.buffer = buffer;
+        //         source.connect(audioContext.destination);
+
+
+        //         console.log("START");
+        //         // Start playback
+        //         source.start();
+
+        //         // let currentColorIndex = 0;
+        //         // const colorInterval = setInterval(() => {
+        //         //     currentColorIndex = (currentColorIndex + 1) % 360;
+        //         //     const bubble = document.querySelectorAll(".msg-bubble:last-child");
+        //         //     const color = `hsl(${Math.floor(120 * currentColorIndex / 360)}, 100%, 50%)`;
+        //         //     bubble.style.backgroundColor = color;
+        //         // }, 1000);
+        //         source.onended = () => {
+        //             window.dispatchEvent(new Event("messageSent"));
+        //         };
+
+        //         currentlySendingMessage.EventEmitter
+
+        //         //clearInterval(playBuffer);
+        //     }
+        // }, 100);
     // });
+
+function sendMessage(message) {
+    messagesToSend.push(message)
+    sendNextMessage();
+}
+
+get(".msger-config-btn").addEventListener("click", () => {
+    document.documentElement.classList.toggle('dark-scheme');
+});
 
 msgerForm.addEventListener("submit", event => {
     event.preventDefault();
 
-    const msgText = msgerInput.value;
-    if (!msgText) return;
+    const msgText = msgerInput.value.trim();
+    if (!msgText) return; // Ignore pressing blank enters
 
-    writeString(msgText, encoderFSK);
+    /// @TODO: Add option to change the username.
+    // Display the message first.
+    const newMessage = createMessage("Ja", ALIGMENT_RIGHT, msgText)
+    clearInputBar();
+    displayMessageAtBottom(newMessage);
 
-    appendMessage(PERSON_NAME, "right", msgText);
-    msgerInput.value = "";
+    sendMessage(newMessage);
+    newMessage.addEventListener("sent", () => {
+        newMessage.bubble.classList.remove("sending");
+        //newMessage.bubble.style.backgroundColor = "#579ffb"; // Blue, indicating success.
+    })
 });
 
-function appendMessage(name, side, text) {
-  //   Simple solution for small apps
-  const msgHTML = `
-    <div class="msg ${side}-msg">
-      <div class="msg-bubble">
-        <div class="msg-info">
-          <div class="msg-info-name">${name}</div>
-          <div class="msg-info-time">${formatDate(new Date())}</div>
-        </div>
+function clearInputBar() {
+    msgerInput.value = "";
+}
 
-        <div class="msg-text">${text}</div>
-      </div>
-    </div>
-  `;
 
-  msgerChat.insertAdjacentHTML("beforeend", msgHTML);
-  msgerChat.scrollTop += 500;
+function createMessage(author, alignment, content) {
+    const date = new Date();
+    const msg = document.createElement("div");
+    msg.classList.add("msg", `${alignment}-msg`);
+
+    const bubble = document.createElement("div");
+    bubble.classList.add("msg-bubble");
+    //bubble.style.backgroundColor = "#d3d3d3";
+    bubble.classList.add("sending");
+
+    const info = document.createElement("div");
+    info.classList.add("msg-info");
+
+    const name = document.createElement("div");
+    name.classList.add("msg-info-name");
+    name.textContent = author;
+
+    const time = document.createElement("div");
+    time.classList.add("msg-info-time");
+    time.textContent = formatDate(date);
+
+    info.append(name, time);
+
+    const text = document.createElement("div");
+    text.classList.add("msg-text");
+    text.textContent = content;
+
+    msg.bubble = bubble;
+    msg.content = content;
+    msg.waveform = modulateStringToWaveform(content, MODULATION_PROTOCOL);
+    bubble.append(info, text);
+    msg.append(bubble);
+
+    return msg;
+}
+
+
+function displayMessageAtBottom(msg) {
+  msgerChat.appendChild(msg);
+  scrollToBottom();
+}
+
+
+function scrollToBottom() {
+  msgerChat.scrollTop = msgerChat.scrollHeight;
 }
 
 // Utils
-function get(selector, root = document) {
+function get(selector) {
   return document.querySelector(".msger").querySelector(selector);
+}
+
+function max(array) {
+    let max = -Infinity;
+    for(let i = 0; i < array.length; i++ ) {
+        if (array[i] > max) {
+            max = array[i];
+        }
+    }
+
+    return max;
 }
 
 function formatDate(date) {

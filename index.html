@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="index.css">
     <title>Holubník</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
 </head>
 <body>
     <section class="msger">
         <header class="msger-header">
             <div class="msger-header-title">Holubník Web</div>
-            <button id="config-button" class="msger-config-btn">Nastavenia</button>
+            <button id="config-button" class="msger-config-btn" title="Nastavenia"><i class="fas fa-gear"></i></button>
         </header>
 
         <main class="msger-chat">
-
         </main>
 
         <form class="msger-inputarea">
@@ -22,7 +22,17 @@
             <button id="submit-button"type="submit" class="msger-send-btn">Odoslať</button>
         </form>
     </section>
-
-    <script type=module src="index.js"></script>
 </body>
+
+<!-- <script src="bindings.js"></script>
+<script>
+    // Wait until the wasm module is loaded
+    setTimeout(() => {
+        console.log(wasmExports.add(10, 20))
+    }, 3000);
+</script> -->
+<script>
+    document.documentElement.classList.add('dark-scheme');
+</script>
+<script type=module src="index.js"></script>
 </html>
