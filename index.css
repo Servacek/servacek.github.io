@@ -104,6 +104,12 @@ body {
     border-bottom: var(--border);
     background: var(--msger-header-bg);
     color: var(--msger-header-colour);
+
+    /* Prevent text selection */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    user-select: none; /* Standard */
 }
 
 .msger-chat {
