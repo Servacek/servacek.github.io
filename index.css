@@ -74,8 +74,9 @@ body {
 
 @media (max-width: 867px) {
     .msger {
-        margin: 0;
-        height: 100%;
+        margin: 0px;
+        height: 80%;
+        border-radius: 0px;
     }
 }
 
