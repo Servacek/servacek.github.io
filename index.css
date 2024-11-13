@@ -75,8 +75,11 @@ body {
 @media (max-width: 867px) {
     .msger {
         margin: 0px;
-        height: 80%;
         border-radius: 0px;
+    }
+
+    html {
+        min-height: fit-content;
     }
 }
 
