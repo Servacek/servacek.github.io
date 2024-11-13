@@ -50,6 +50,7 @@
 html * {
     font-family: JetBrains Mono;
     transition: all 0.23s;
+    /*font-size: calc(70% + 0.8vmin);*/
 }
 
 html {
@@ -70,17 +71,6 @@ body {
     align-items: center;
     height: 100vh;
     background-image: var(--body-bg);
-}
-
-@media (max-width: 867px) {
-    .msger {
-        margin: 0px;
-        border-radius: 0px;
-    }
-
-    html {
-        min-height: fit-content;
-    }
 }
 
 .msger {
@@ -235,6 +225,7 @@ body {
     font-weight: bold;
     cursor: pointer;
     transition: background 0.23s;
+    overflow: hidden;
 }
 
 .msger-config-btn {
@@ -260,4 +251,20 @@ body {
 
 .msger-chat {
     background-color: var(--msger-chat-bg);
+}
+
+@media (max-width: 512px) {
+    .msger {
+        margin: 0px;
+        border-radius: 0px;
+        height: 100vh;
+    }
+
+    html {
+        min-height: fit-content;
+    }
+
+    .msger-send-btn {
+        display: none;
+    }
 }
