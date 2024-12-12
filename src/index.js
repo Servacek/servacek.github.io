@@ -7,6 +7,7 @@ import * as CONST from './constants.js';
 
 const msgerForm = get(".msger-inputarea");
 const msgerInput = get(".msger-input");
+msgerInput.focus(); // Default focus
 const msgerChat = get(".msger-chat");
 
 const ALIGMENT_RIGHT = "right"
@@ -242,11 +243,16 @@ get(".msger-config-btn").addEventListener("click", () => {
 });
 
 const attachmentInput = document.getElementById('attachment-input');
-const chatInput = document.querySelector(".msger").querySelector('.msger-chat');
 const modal = document.getElementById('image-modal');
 const modalImage = document.getElementById('modal-image');
 const imageLabel = document.getElementById('image-label');
 const sendButton = document.getElementById('send-button');
+
+function closeImageUploadModal() {
+    modal.style.display = "none";
+    imageLabel.value = "";
+    msgerInput.focus();
+}
 
 // Handle Send Button Click
 sendButton.addEventListener('click', () => {
@@ -279,17 +285,19 @@ sendButton.addEventListener('click', () => {
     sendMessage(message);
 
     // Close the modal
-    modal.style.display = 'none';
-    imageLabel.value = ''; // Clear the input
+    closeImageUploadModal();
+
+    setTimeout(() => {
+        msgerInput.value = ""; // Clear the input since we have used it for the modal
+    }, 0);
 });
 
 // Close the modal when clicking outside the content
 modal.addEventListener('click', (event) => {
-    if (event.target === modal) {
-        modal.style.display = 'none';
-        imageLabel.value = ''; // Clear the input
+    if (event.target === modal) { // This has to be here!!!
+        closeImageUploadModal();
     }
-});
+})
 
 // Handle file selection
 attachmentInput.addEventListener('change', (event) => {
@@ -301,6 +309,8 @@ attachmentInput.addEventListener('change', (event) => {
 
             // Set the modal image source
             modalImage.src = imageUrl;
+
+            imageLabel.value = msgerInput.value;
 
             // Show the modal
             modal.style.display = 'flex';
