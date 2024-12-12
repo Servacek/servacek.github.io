@@ -15,7 +15,7 @@ export const messageQueue = [];
  * @param {string} [encoding=CONST.DEFAULT_STRING_ENCODING] - The encoding to use.
  * @returns {string} A string of 0s and 1s representing the binary representation of the input string.
  */
-function encodeStringToBits(string, encoding = CONST.DEFAULT_STRING_ENCODING) {
+export function encodeStringToBits(string, encoding = CONST.DEFAULT_STRING_ENCODING) {
     return Array.from(new TextEncoder(encoding).encode(string))
         .map(byte => byte.toString(2).padStart(8, '0'))
         .join('');

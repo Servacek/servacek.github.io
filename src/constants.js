@@ -3,6 +3,8 @@
 // tonewave - pure sine wave, representing a single frequency
 // wavefrom - shows the displacement (amplitude) of the sound wave on the vertical axis and time on the horizontal axis.
 
+export const DEBUG_MODE = true;
+
 export const TWOPI = 2 * Math.PI;
 
 // The maximal number of empty chunks received before timing out the connection.
@@ -65,9 +67,10 @@ export const VOLUME = 0.25;  // Percent
 
 // According to the Nyquist theorem
 // https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem
-export const SAMPLING_FREQUENCY = MAX_HUMAN_HEAR_FREQUENCY * 2; // Hz = 44 100 Hz
+export const SAMPLING_FREQUENCY = 48000; //MAX_HUMAN_HEAR_FREQUENCY * 2; // Hz = 44 100 Hz
 export const MIN_SAMPLING_FREQUENCY = DATA_FREQ_RANGE_MAX * 2;
 export const SAMPLING_PERIOD = 1 / SAMPLING_FREQUENCY; // Seconds T = 1 / f
+export const SAMPLE_DURATION = SAMPLING_PERIOD;
 export const SAMPLES_PER_FRAME = Math.floor(SAMPLING_FREQUENCY * DATA_FRAME_DURATION);
 export const MAX_MAGNITUDE = 2 ** (BIT_DEPTH - 1);
 export const AMPLITUDE = MAX_MAGNITUDE * VOLUME; // ym
@@ -88,7 +91,9 @@ export const INTEGER_TYPE = {
 }[BIT_DEPTH] || DEFAULT_INTEGER_TYPE;
 
 export const BIT_RATE = BITS_PER_FRAME / DATA_FRAME_DURATION; // bits per second
-export const SAMPLE_BLOCK_SIZE = Math.floor(SAMPLING_FREQUENCY * (DATA_FRAME_DURATION + FRAME_SPACING_DURATION)); // Samples per chunk
+export const SAMPLE_CHUNK_SIZE = Math.floor(SAMPLING_FREQUENCY * (DATA_FRAME_DURATION + FRAME_SPACING_DURATION)); // Samples per chunk
+export const CHUNK_DURATION = SAMPLE_CHUNK_SIZE * SAMPLE_DURATION;
+export const CHUNKING_FREQUENCY = 1 / CHUNK_DURATION; // Hertz
 
 // For mono audio. Set to None if you would like to use all available channels.
 export const INPUT_CHANNELS = 1;
