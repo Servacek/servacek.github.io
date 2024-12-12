@@ -9,6 +9,7 @@ const msgerForm = get(".msger-inputarea");
 const msgerInput = get(".msger-input");
 msgerInput.focus(); // Default focus
 const msgerChat = get(".msger-chat");
+const msgerSendButton = get(".msger-send-btn");
 
 const ALIGMENT_RIGHT = "right"
 const ALIGMENT_LEFT  = "left";
@@ -288,7 +289,8 @@ sendButton.addEventListener('click', () => {
     closeImageUploadModal();
 
     setTimeout(() => {
-        msgerInput.value = ""; // Clear the input since we have used it for the modal
+        // Clear the input since we have used it for the modal
+        clearInputBar();
     }, 0);
 });
 
@@ -326,8 +328,9 @@ attachmentInput.addEventListener('change', (event) => {
 });
 
 // Handle pressing enter at the modal
-imageLabel.addEventListener('keydown', (event) => {
+imageLabel.addEventListener("keydown", (event) => {
     if (event.key === 'Enter') {
+        event.preventDefault();
         sendButton.click();
     }
 });
@@ -359,13 +362,14 @@ msgerForm.submit = () => {
     // }
 
     sendMessage(newMessage);
-};
+}
 
 
 //startRecording();
 
 function clearInputBar() {
     msgerInput.value = "";
+    msgerInput.oninput();
 }
 
 function createMessage(author, alignment, content) {
