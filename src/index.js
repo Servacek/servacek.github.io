@@ -7,8 +7,10 @@ import * as CONST from './constants.js';
 
 const msgerForm = get(".msger-inputarea");
 const msgerInput = get(".msger-input");
-msgerInput.focus(); // Default focus
 const msgerChat = get(".msger-chat");
+if (!window.matchMedia("(max-width: 512px)").matches && !CONST.DEBUG_MODE) {
+    msgerInput.focus(); // Default focus
+}
 const msgerSendButton = get(".msger-send-btn");
 
 const ALIGMENT_RIGHT = "right"
@@ -239,6 +241,11 @@ function sendMessage(message) {
     })
 }
 
+get(".msger-input").oninput = function() {
+    this.style.height = 'auto'; // Reset height to calculate scrollHeight
+    this.style.height = `${Math.min(this.scrollHeight, 200)}px`; // Adjust 200 to match max-height
+}
+
 get(".msger-config-btn").addEventListener("click", () => {
     document.documentElement.classList.toggle('dark-scheme');
 });
@@ -398,7 +405,7 @@ function createMessage(author, alignment, content) {
 
     info.append(name, time);
 
-    const text = document.createElement("div");
+    const text = document.createElement("pre");
     text.classList.add("msg-text");
     text.textContent = content;
 

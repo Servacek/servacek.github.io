@@ -5,13 +5,13 @@
 
 :root {
     --body-bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    --msger-bg: #fff;
+    /* --msger-bg: #fff; */
     --border: 2px solid #ddd;
     --left-msg-bg: #ececec;
     --right-msg-bg: #579ffb;
     --right-msg-fg: #fff;
     --msger-header-bg: #eee;
-    --msger-header-colour: #666;
+    --msger-header-colour: #5d5d5d;
     --msger-scrollbar-track: #ddd;
     --msger-scrollbar-thumb: #bdbdbd;
     --msger-chat-bg: #fcfcfe;
@@ -25,23 +25,25 @@
 }
 
 :root.dark-scheme {
-    --body-bg: linear-gradient(135deg, #2d2d2d 0%, #6a6a6a 100%);
-    --msger-bg: #351F39;
-    --border: 2px solid #555;
+    --body-bg: #1e1f22;
+    /* --body-bg: linear-gradient(135deg, #2d2d2d 0%, #6a6a6a 100%); */
+    /* --msger-bg: #351F39; */
+    --msger-bg: #38415f;
+    --border: 1px solid #0000007b;
     --left-msg-bg: #444;
     --right-msg-bg: #0078d7;
     --right-msg-fg: #fff;
-    --msger-header-bg: #6e6e6e;
-    --msger-header-colour: #c9c9c9;
+    --msger-header-bg: rgba(63, 62, 62, 0.2);
+    --msger-header-colour: #dcdcdc;
     --msger-header-hover-colour: #e8e8e8;
     --msger-scrollbar-track: #ddd;
     --msger-scrollbar-thumb: #bdbdbd;
-    --msger-chat-bg: #555556;
-    --inputbar-area: #555556;
-    --msger-send-button-bg: rgb(0, 196, 65);
+    --msger-chat-bg: transparent;
+    --inputbar-area: rgb(85, 85, 86, 0);
+    --msger-send-button-bg: rgb(47, 134, 76);
     --msger-send-button-fg: #fff;
-    --msger-send-button-hover-bg: rgb(0, 180, 50);
-    --msger-input-bg: #69696a;
+    --msger-send-button-hover-bg: rgb(62, 144, 89);
+    --msger-input-bg: rgb(105, 105, 106, 0.2);
     --msger-input-fg: #fff;
     --msger-input-placeholder-fg: #838384;
     --msg-img-bg: #ddd;
@@ -70,6 +72,7 @@ body {
     justify-content: center;
     align-items: center;
     height: 100svh;
+    background-color: var(--body-bg);
     background-image: var(--body-bg);
     position: relative;
 }
@@ -79,10 +82,11 @@ body {
     flex-flow: column wrap;
     justify-content: space-between;
     width: 100%;
-    max-width: 867px;
+    max-width: 1200px;
     margin: 25px 10px;
     height: calc(100% - 50px);
     border: var(--border);
+    border: transparent;
     border-radius: 5px;
     background: var(--msger-bg);
     box-shadow: 0 15px 15px -5px rgba(0, 0, 0, 0.2);
@@ -92,9 +96,11 @@ body {
     display: flex;
     justify-content: space-between;
     padding: 10px;
-    border-bottom: var(--border);
+    /* border-bottom: var(--border); */
+    border-radius: 5px 5px 0px 0px;
     background: var(--msger-header-bg);
     color: var(--msger-header-colour);
+    box-shadow: 0 2px 0px 0px rgba(0, 0, 0, 0.4);
 
     /* Prevent text selection */
     -webkit-user-select: none; /* Safari */
@@ -196,20 +202,6 @@ body {
     margin: 0 0 0 10px;
 }
 
-.msger-inputarea {
-    display: flex;
-    padding: 10px;
-    border-top: var(--border);
-    background: var(--inputbar-area);
-}
-
-.msger-inputarea * {
-    padding: 10px;
-    border: none;
-    border-radius: 3px;
-    font-size: 1em;
-}
-
 .msger-input {
     flex: 1;
     background: var(--msger-input-bg);
@@ -218,45 +210,6 @@ body {
 
 ::placeholder {
     color: var(--msger-input-placeholder-fg);
-}
-
-.msger-input:focus {
-    flex: 1;
-    background: var(--msger-input-bg);
-    outline: none;
-}
-
-.msger-send-btn {
-    margin-left: 10px;
-    background: var(--msger-send-button-bg);
-    color: var(--msger-send-button-fg);
-    max-width: min-content;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.23s;
-    overflow: hidden;
-}
-
-.msger-attachment-btn {
-    margin-right: 10px;
-    background: var(--inputbar-area);
-    color: var(--msger-send-button-fg);
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.23s;
-    padding:0;
-    display: flex;
-    align-items: center;
-}
-
-.msger-attachment-input {
-    display: none;
-}
-
-.msger-attachment-btn:hover {
-    margin-right: 10px;
-    background: var(--msger-input-bg);
-    border-radius: 10%;
 }
 
 .msger-config-btn {
@@ -288,6 +241,93 @@ body {
     filter: brightness(1.2);
 }
 
+.msger {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url("../assets/dark-background.jpg");
+    background-size: cover;
+}
+
+
+/********************************/
+/******** INPUT BAR ********/
+/********************************/
+
+
+.msger-attachment-input {
+    display: none;
+}
+
+.msger-attachment-btn {
+    margin-right: 10px;
+    background: var(--inputbar-area);
+    color: var(--msger-send-button-fg);
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.msger-attachment-btn:hover {
+    margin-right: 10px;
+    background: var(--msger-input-bg);
+    border-radius: 10%;
+}
+
+#left-input-toolbar {
+    padding: 0px;
+    align-items: center;
+    padding-top: 2.5px;
+}
+
+#right-input-toolbar {
+    padding: 0px;
+    align-items: center;
+}
+
+.msger-inputarea {
+    display: flex;
+    padding: 0px 10px 10px 10px;
+    /* border-top: var(--border); */
+    background: var(--inputbar-area);
+}
+
+.msger-inputarea * {
+    padding: 10px;
+    border: none;
+    border-radius: 3px;
+    font-size: 1em;
+}
+
+.msger-input:focus {
+    flex: 1;
+    background: var(--msger-input-bg);
+    outline: none;
+}
+
+.msger-input {
+    height: auto;
+    overflow: hidden;
+    overflow-y: auto;
+    resize: none;
+}
+
+.msger-send-btn {
+    margin-left: 10px;
+    background: var(--msger-send-button-bg);
+    color: var(--msger-send-button-fg);
+    max-width: min-content;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.23s;
+    overflow: hidden;
+}
+
+
+/********************************/
+/******** MOBILE DEVICES ********/
+/********************************/
+
+
 @media (max-width: 512px) {
     .msger {
         margin: 0px;
@@ -301,5 +341,9 @@ body {
 
     .msger-send-btn {
         display: none;
+    }
+
+    .bottom-nav {
+        background-color: var(--body-bg);
     }
 }

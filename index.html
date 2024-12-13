@@ -81,12 +81,18 @@
         </main>
 
         <form class="msger-inputarea">
-            <label for="attachment-input" class="msger-attachment-btn">
-                <input id="attachment-input" class="msger-attachment-input" type="file" accept=".png, .jpg, .jpeg">
-                <i class="fas fa-plus" style="margin: auto;"></i>
-            </label>
-            <textarea class="msger-input" placeholder="Zadajte správu..." maxlength="256" rows="1" style="height: auto; overflow: hidden; resize: none;" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px';"></textarea>
-            <button id="submit-button" class="msger-send-btn" type="button">Odoslať</button>
+            <div id="left-input-toolbar">
+                <label for="attachment-input" class="msger-attachment-btn">
+                    <input id="attachment-input" class="msger-attachment-input" type="file" accept=".png, .jpg, .jpeg">
+                    <i class="fas fa-plus" style="margin: auto;"></i>
+                </label>
+            </div>
+
+            <textarea class="msger-input" placeholder="Zadajte správu..." maxlength="256" rows="1"></textarea>
+
+            <div id="right-input-toolbar">
+                <button id="submit-button" class="msger-send-btn" type="button">Odoslať</button>
+            </div>
         </form>
     </section>
 
