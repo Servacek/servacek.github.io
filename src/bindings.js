@@ -6,16 +6,18 @@
 //      - Missing EMSCRIPTEN_KEEPALIVE macros above C functions.
 
 
+// This cannot be outside since it would be blocked by CORS
 export const LIBRARY_PATH = "libs/audio_modem.wasm";
 
 // MEMORY:
 // - Max message length is 512 characters, each one of them can have 4 bytes
 //   that means we need to allocate at least 2048 bytes of memory for the input.
 // Looks like constants in the memory are stored from 1024.
-export const INPUT_BUFFER_PTR = 0; // can go up to 2047 if needed
-export const OUTPUT_BUFFER_PTR = 4096; // Up to 2^16
 
-export let EXPORTS = null, MEMORY = null;
+export let
+    EXPORTS = null, MEMORY = null, MEMORY_F32 = null, MEMORY_U32 = null,
+    MEMORY_STACK_START = null, INPUT_BUFFER_PTR = null, OUTPUT_BUFFER_PTR = null,
+    BUFFER = null, LOADED = false, CONFIG = {};
 
 ///////////////////////////////////////
 
@@ -48,13 +50,62 @@ async function _init() {
     //     maximum: 8096,  // optional, can set a limit (512 pages in this case)
     // });
 
+    // Use instatiateStreaming instead of instantiate because it is more efficient
+    // since it doesn't require converting the WASM module to ByteArray.
     const {instance} = await WebAssembly.instantiateStreaming(
         fetch(LIBRARY_PATH),
-        //{ env: { memory } } // Pass the memory object to the module
+        { env: {
+                _emscripten_memcpy_js: (dest, src, num) => MEMORY.copyWithin(dest, src, src + num),
+            },
+            // Support for printf
+            wasi_snapshot_preview1: {
+                fd_write: (fd, iov, iovcnt, pnum) => {
+                    var num = 0;
+                    let s = "";
+                    for (var i = 0; i < iovcnt; i++) {
+                        var ptr = MEMORY_U32[((iov)>>2)];
+                        var len = MEMORY_U32[(((iov)+(4))>>2)];
+                        iov += 8;
+                        for (var j = 0; j < len; j++) {
+                            s += String.fromCharCode(MEMORY[ptr+j]);
+                        }
+                        num += len;
+                    }
+                    MEMORY_U32[((pnum)>>2)] = num;
+                    console.log(s);
+                    return 0;
+                }
+            },
+        } // Pass the memory object to the module
     );
 
+    console.log("WASM MODULE LOADED", instance)
+
     EXPORTS = instance.exports;
+    EXPORTS.recalc_conf() // Recalculate the configurations
+
+    BUFFER = EXPORTS.memory.buffer;
     MEMORY = new Uint8Array(EXPORTS.memory.buffer);
+    MEMORY_U32 = new Uint32Array(EXPORTS.memory.buffer);
+    MEMORY_F32 = new Float32Array(EXPORTS.memory.buffer);
+    MEMORY_STACK_START = MEMORY.length - EXPORTS.emscripten_stack_get_free();
+
+    INPUT_BUFFER_PTR = MEMORY_STACK_START + 4096;
+    OUTPUT_BUFFER_PTR = INPUT_BUFFER_PTR + 1024;
+
+    // WARNING: WASM is little-endian by default.
+    const MEMORY_VIEW = new DataView(EXPORTS.memory.buffer);
+    print(MEMORY_VIEW.getUint8());
+
+    // We need to know the size of the config so we can retrive it from the memory.
+    for (const [name, exported] of Object.entries(EXPORTS)) {
+        if (exported instanceof WebAssembly.Global) {
+            CONFIG[name] = exported.value;
+        }
+    }
+
+    // console.log(instance)
+    // console.log(EXPORTS)
 
     // Array of bytes allocated by the program.
     // let memory_array = new Int8Array(ADMOD.memory.buffer);
@@ -67,4 +118,8 @@ async function _init() {
     // console.log(new Float32Array(ADMOD.memory.buffer, 66680, 4));
 }
 
-_init();
+_init().then(() => {
+    LOADED = true;
+
+    window.dispatchEvent(new CustomEvent("wasm-library-loaded"));
+});

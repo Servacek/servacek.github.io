@@ -3,6 +3,9 @@
 // tonewave - pure sine wave, representing a single frequency
 // wavefrom - shows the displacement (amplitude) of the sound wave on the vertical axis and time on the horizontal axis.
 
+export const ALIGMENT_RIGHT = "right"
+export const ALIGMENT_LEFT  = "left";
+
 export const DEBUG_MODE = true;
 
 export const TWOPI = 2 * Math.PI;

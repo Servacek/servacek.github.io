@@ -4,19 +4,22 @@
 // import {decodeBitsToString, getPeakFrequency} from './demodulator.js';
 import * as WASM from './bindings.js';
 import * as CONST from './constants.js';
+import {get, max, formatDate} from './utils.js';
+import { plotFFT, plotFFTWaterfall, plotWaveform } from './plotter.js';
 
-const msgerForm = get(".msger-inputarea");
-const msgerInput = get(".msger-input");
-const msgerChat = get(".msger-chat");
+// TODO: Disable the send button when no content is available.
+// Provide the send button also on mobile in some minimazed form.
+
+
+////////////////////
+
+const inputArea = document.getElementById("input-area");
+const inputBar = document.getElementById("input-bar");
+const messageArea = document.getElementById("message-area");
+const sendMessageButton = document.getElementById("send-message-button");
 if (!window.matchMedia("(max-width: 512px)").matches && !CONST.DEBUG_MODE) {
-    msgerInput.focus(); // Default focus
+    inputBar.focus(); // Default focus
 }
-const msgerSendButton = get(".msger-send-btn");
-
-const ALIGMENT_RIGHT = "right"
-const ALIGMENT_LEFT  = "left";
-
-// const MODULATION_PROTOCOL = FSK;
 
 ////////////////////
 
@@ -27,96 +30,149 @@ const textEndcoder = new TextEncoder("utf-8");
 
 ////////////////////
 
+print = console.log
+
 async function startRecording() {
-    // const audioContext = new AudioContext();
-    // const source = audioContext.createMediaStreamSource(await navigator.mediaDevices.getUserMedia({ audio: true }));
-    // const destination = audioContext.createMediaStreamDestination();
-
-    // source.connect(destination);
-
-    // const processor = audioContext.createScriptProcessor(16384, 1, 1);
-    // processor.onaudioprocess = ({ inputBuffer }) => {
-    //     console.log("RECORDED")
-    //     const audioBuffer = audioContext.createBuffer(inputBuffer.numberOfChannels, inputBuffer.length, inputBuffer.sampleRate);
-    //     for (let channel = 0; channel < inputBuffer.numberOfChannels; channel++) {
-    //         const float32Array = inputBuffer.getChannelData(channel);
-    //         audioBuffer.getChannelData(channel).set(float32Array);
-    //     }
-
-    //     // TODO: Process the audio buffer
-    // };
-
-    // source.connect(processor);
-    // processor.connect(destination);
-
-    window.AudioContext = window.AudioContext || window.webkitAudioContext;
-    window.OfflineAudioContext = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-
-    var recorder = null;
-    let context = new AudioContext();
-    let constraints = {
+    navigator.mediaDevices.getUserMedia({
         audio: {
             echoCancellation: false,
             autoGainControl: false,
             noiseSuppression: false,
         },
         video: false,
-    };
+    }).then(function(stream) {
+        const context = new AudioContext();
+        const mediaStream = context.createMediaStreamSource(stream);
 
-    navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
-        // console.log(e)
-        let mediaStream = context.createMediaStreamSource(stream);
-        // const mediaRecorder = new MediaRecorder(stream, { sampleRate: 44100 });
-
-        // const sampleDurationMilis = (CONST.SAMPLING_PERIOD * CONST.SAMPLE_BLOCK_SIZE) * 1000;
-        // mediaRecorder.start(2000);
-        // mediaRecorder.ondataavailable = function (e) {
-        //     const reader = new FileReader();
-        //     reader.onload = function() {
-        //         const arrayBuffer = this.result;
-        //         const intArray = new Int16Array(arrayBuffer);
-        //         console.log(intArray);
-        //     };
-        //     reader.readAsArrayBuffer(e.data);
-        // }
-
+        const SAMPLE_CHUNK_SIZE = WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
         // https://ciiec.buap.mx/FFT.js/
         // rounded to nearest power of 2
-        const bufferSize = 1024;
-        if (context.createScriptProcessor) {
-            recorder = context.createScriptProcessor(
-                    bufferSize,
-                    CONST.INPUT_CHANNELS,
-                    CONST.OUTPUT_CHANNELS);
-        } else {
-            recorder = context.createJavaScriptNode(
-                    bufferSize,
-                    CONST.INPUT_CHANNELS,
-                    CONST.OUTPUT_CHANNELS);
-        }
+        const bufferSize = 2048;//Math.pow(2, Math.floor(Math.log2(SAMPLE_CHUNK_SIZE)));
+        var recorder = context.createScriptProcessor
+            ? context.createScriptProcessor(bufferSize, CONST.INPUT_CHANNELS, CONST.OUTPUT_CHANNELS)
+            : context.createJavaScriptNode(bufferSize, CONST.INPUT_CHANNELS, CONST.OUTPUT_CHANNELS);
+
+        const FFTCanvas = document.getElementById('fft-result-graph');
+        const WaveformCanvas = document.getElementById("input-waveform-graph");
 
         let chunkBuffer = [];
         recorder.onaudioprocess = function (e) {
+            // This seems to be already normalized which makes sense.
+            // Input buffer seems to be 1024 samples long (ALWAYS).
             const inputBuffer = e.inputBuffer.getChannelData(0);
-            const bufferAbsMax = Math.abs(Math.max(...inputBuffer));
-            const normalizedBuffer = inputBuffer.map(x => x / bufferAbsMax);
-            if (chunkBuffer.length < CONST.SAMPLE_CHUNK_SIZE) {
-                chunkBuffer.push(...normalizedBuffer);
-                console.log("PUSH")
-            }
 
-            if (chunkBuffer.length >= CONST.SAMPLE_CHUNK_SIZE) {
-                console.log("PROCESS", CONST.SAMPLE_CHUNK_SIZE, chunkBuffer.length)
-                for (let i = 0; i < Math.floor(chunkBuffer.length / CONST.SAMPLE_CHUNK_SIZE); i++) {
-                    const chunk = chunkBuffer.slice(0, CONST.SAMPLE_CHUNK_SIZE)
-                    chunkBuffer = chunkBuffer.slice(CONST.SAMPLE_CHUNK_SIZE);
-                    WASM.fillInputBuffer(chunkBuffer);
+            const SAMPLING_FREQUENCY = WASM.MEMORY_U32[WASM.EXPORTS.SAMPLING_FREQUENCY/4];
+            const SAMPLE_CHUNK_SIZE = WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
 
-                    console.log(chunkBuffer.length)
-                    console.log(chunk.length, chunkBuffer.length)
-                    console.log(getPeakFrequency(chunk));
+            if (chunkBuffer.length < SAMPLE_CHUNK_SIZE) {
+                chunkBuffer.push(...inputBuffer);
+            } else {
+                for (let i = 0; i < Math.floor(chunkBuffer.length / SAMPLE_CHUNK_SIZE); i++) {
+                    let chunk = chunkBuffer.slice(0, SAMPLE_CHUNK_SIZE)
+                    chunkBuffer = chunkBuffer.slice(SAMPLE_CHUNK_SIZE);
+
+                    const nearestPowerOf2 = Math.pow(2, Math.ceil(Math.log2(chunk.length)));
+                    // Create a new array with the nearest power of 2 length and fill with zeros
+                    var paddedWave = new Float32Array(nearestPowerOf2);
+                    paddedWave.set(chunk);
+                    chunk = paddedWave;
+                    // chunk = wave
+
+                    const startPtr = WASM.MEMORY_STACK_START;
+                    const realPtr = startPtr;
+                    const imagPtr = realPtr + chunk.length*4;
+                    const bytesPtr = imagPtr + chunk.length*4;
+
+                    WASM.MEMORY_F32.set(chunk, realPtr>>2);
+
+                    // Make sure the imginary array is filled with zeros
+                    WASM.MEMORY_F32.fill(0, imagPtr>>2, bytesPtr>>2);
+
+                    WASM.EXPORTS.demodulate(
+                        realPtr, imagPtr, chunk.length, SAMPLE_CHUNK_SIZE, bytesPtr
+                    );
+
+                    console.log("CHUNK", chunk.length, WASM.MEMORY[bytesPtr]);
+
+                    // if (canvas.paused == true) {
+                    //     continue;
+                    // }
+
+                    // // Retrieve the computed real and imaginary numbers from memory
+                    // const computedReal = new Float32Array(WASM.BUFFER, realPtr, SAMPLE_CHUNK_SIZE)
+                    // const computedImag = new Float32Array(WASM.BUFFER, imagPtr, SAMPLE_CHUNK_SIZE)
+
+                    // console.log("Computed Real:", computedReal);
+                    // console.log("Computed Imaginary:", computedImag);
+
+                    // const maxFreq = 5000; // Define the maximum frequency to display
+                    // const freqBinSize = SAMPLING_FREQUENCY / chunk.length; // Frequency resolution
+
+                    // print(freqBinSize)
+
+                    // // Generate frequencies array and calculate magnitudes
+                    // const frequencies = Array.from({ length: SAMPLE_CHUNK_SIZE / 2 }, (_, i) => Math.round(i * freqBinSize));
+                    // const magnitudes = computedReal.map((r, i) => Math.sqrt(r * r + computedImag[i] * computedImag[i]));
+
+                    // // Filter frequencies and magnitudes for the desired range
+                    // const filteredFrequencies = frequencies.filter((freq) => freq <= maxFreq);
+                    // const filteredMagnitudes = magnitudes.slice(0, filteredFrequencies.length); // Match the filtered frequencies
+                    // //const filteredMagnitudesDB = filteredMagnitudes.map((mag) => 20 * Math.log10(mag));
+
+                    // // Plot the result
+                    // plotFFT(canvas, filteredFrequencies, filteredMagnitudes, canvas.watefall);
+
+                //     console.log("BYTE:", WASM.MEMORY[bytesPtr]);
+                //     // console.log(chunk.length)
+                //     // console.log(chunk.length, chunkBuffer.length)
+                //     // console.log(getPeakFrequency(chunk));
                 }
             }
+
+            // Do only update the canvas when we are visible and running!
+            if (FFTCanvas.paused == true || FFTCanvas.offsetParent == null) {
+                return;
+            }
+
+            plotWaveform(WaveformCanvas, inputBuffer);
+
+            const startPtr = WASM.MEMORY_STACK_START;
+            const realPtr = startPtr;
+            const imagPtr = realPtr + inputBuffer.length*4;
+            const bytesPtr = imagPtr + inputBuffer.length*4;
+
+            WASM.MEMORY_F32.set(inputBuffer, realPtr>>2);
+
+            // Make sure the imginary array is filled with zeros
+            WASM.MEMORY_F32.fill(0, imagPtr>>2, bytesPtr>>2);
+
+            WASM.EXPORTS.demodulate(
+                realPtr, imagPtr, inputBuffer.length, SAMPLE_CHUNK_SIZE, bytesPtr
+            );
+
+            // Retrieve the computed real and imaginary numbers from memory
+            const computedReal = new Float32Array(WASM.BUFFER, realPtr, SAMPLE_CHUNK_SIZE)
+            const computedImag = new Float32Array(WASM.BUFFER, imagPtr, SAMPLE_CHUNK_SIZE)
+
+            console.log("Computed Real:", computedReal);
+            console.log("Computed Imaginary:", computedImag);
+
+            const maxFreq = 5000; // Define the maximum frequency to display
+            const freqBinSize = SAMPLING_FREQUENCY / inputBuffer.length; // Frequency resolution
+
+            print(freqBinSize)
+
+            // Generate frequencies array and calculate magnitudes
+            const frequencies = Array.from({ length: SAMPLE_CHUNK_SIZE / 2 }, (_, i) => Math.round(i * freqBinSize));
+            const magnitudes = computedReal.map((r, i) => Math.sqrt(r * r + computedImag[i] * computedImag[i]));
+
+            // Filter frequencies and magnitudes for the desired range
+            const filteredFrequencies = frequencies.filter((freq) => freq <= maxFreq);
+            const filteredMagnitudes = magnitudes.slice(0, filteredFrequencies.length); // Match the filtered frequencies
+            //const filteredMagnitudesDB = filteredMagnitudes.map((mag) => 20 * Math.log10(mag));
+
+            // Plot the result
+            plotFFT(FFTCanvas, filteredFrequencies, filteredMagnitudes, FFTCanvas.watefall);
 
             //console.log(getPeakFrequency(normalizedBuffer));
 
@@ -128,8 +184,11 @@ async function startRecording() {
 
         mediaStream.connect(recorder);
         recorder.connect(context.destination);
-    }).catch(function (e) {
+    }).catch(function (e) { // This should handle even the revokes and everything.
+        // TODO: Handle not being allowed to record audio.
         console.error(e);
+        console.error("WE CANNOT RECORD AUDIO, WHAT CAN WE DO???!!");
+        console.error("IMPLEMENT WRITE ONLY MODE FOR ONE DIRECTIONAL COMMUNICATION!!!");
     });
 }
 
@@ -169,7 +228,7 @@ function sendNextMessage() {
     }
 }
 
-// startRecording();
+startRecording();
 
 // let rxBuffer;
 // navigator.mediaDevices.getUserMedia({ audio: false, video: false })
@@ -243,125 +302,29 @@ function sendMessage(message) {
     })
 }
 
-get(".msger-input").oninput = function() {
+inputBar.oninput = function() {
     this.style.height = 'auto'; // Reset height to calculate scrollHeight
     this.style.height = `${Math.min(this.scrollHeight, 200)}px`; // Adjust 200 to match max-height
 }
 
-get(".msger-config-btn").addEventListener("click", () => {
-    document.documentElement.classList.toggle('dark-scheme');
-});
-
-const attachmentInput = document.getElementById('attachment-input');
-const modal = document.getElementById('image-modal');
-const modalImage = document.getElementById('modal-image');
-const imageLabel = document.getElementById('image-label');
-const sendButton = document.getElementById('send-button');
-
-function closeImageUploadModal() {
-    modal.style.display = "none";
-    imageLabel.value = "";
-    msgerInput.focus();
-}
-
-// Handle Send Button Click
-sendButton.addEventListener('click', () => {
-    const labelText = imageLabel.value || "";
-
-    // Log data or process the image and label
-    console.log('Image sent with label:', labelText);
-
-    // Optionally append the image to the chat area
-    const imgElement = document.createElement('img');
-    imgElement.src = modalImage.src;
-    imgElement.alt = labelText;
-    imgElement.style.maxHeight = '200px';
-    imgElement.style.marginRight = '10px';
-    imgElement.style.borderRadius = '8px';
-
-    const labelElement = document.createElement('span');
-    labelElement.textContent = labelText;
-    labelElement.style.marginLeft = '5px';
-
-    const container = document.createElement('div');
-    container.style.display = 'flex';
-    container.style.alignItems = 'center';
-    container.appendChild(imgElement);
-    container.appendChild(labelElement);
-
-    const message = createMessage("Ja", ALIGMENT_RIGHT, labelText);
-    addImageToMessage(message, imgElement);
-    displayMessageAtBottom(message);
-    sendMessage(message);
-
-    // Close the modal
-    closeImageUploadModal();
-
-    setTimeout(() => {
-        // Clear the input since we have used it for the modal
-        clearInputBar();
-    }, 0);
-});
-
-// Close the modal when clicking outside the content
-modal.addEventListener('click', (event) => {
-    if (event.target === modal) { // This has to be here!!!
-        closeImageUploadModal();
-    }
-})
-
-// Handle file selection
-attachmentInput.addEventListener('change', (event) => {
-    const file = event.target.files[0];
-    if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const imageUrl = e.target.result;
-
-            // Set the modal image source
-            modalImage.src = imageUrl;
-
-            imageLabel.value = msgerInput.value;
-
-            // Show the modal
-            modal.style.display = 'flex';
-            imageLabel.style.display = "flex";
-            sendButton.style.display = "absolute";
-            // Focus the label input
-            imageLabel.focus();
-        };
-        reader.readAsDataURL(file);
-    } else {
-        alert('Please select a valid image file.');
-    }
-});
-
-// Handle pressing enter at the modal
-imageLabel.addEventListener("keydown", (event) => {
-    if (event.key === 'Enter') {
-        event.preventDefault();
-        sendButton.click();
-    }
-});
-
 // Handle submit button being pressed
-get(".msger-send-btn").addEventListener("click", () => msgerForm.submit());
+sendMessageButton.addEventListener("click", () => inputArea.submit());
 
 // Handle enter key, when SHIFT is pressed do not send the message.
-msgerForm.addEventListener("keydown", event => {
+inputArea.addEventListener("keydown", event => {
     if (event.keyCode === 13 && !event.shiftKey) {
         event.preventDefault();
-        msgerForm.submit();
+        inputArea.submit();
     }
 })
 
-msgerForm.submit = () => {
-    const msgText = msgerInput.value.trim();
+inputArea.submit = () => {
+    const msgText = inputBar.value.trim();
     if (!msgText) return; // Ignore pressing blank enters
 
     /// @TODO: Add option to change the username.
     // Display the message first.
-    const newMessage = createMessage("Ja", ALIGMENT_RIGHT, msgText)
+    const newMessage = createMessage("Ja", CONST.ALIGMENT_RIGHT, msgText)
     clearInputBar();
     displayMessageAtBottom(newMessage);
 
@@ -377,8 +340,8 @@ msgerForm.submit = () => {
 //startRecording();
 
 function clearInputBar() {
-    msgerInput.value = "";
-    msgerInput.oninput();
+    inputBar.value = "";
+    inputBar.oninput();
 }
 
 function createMessage(author, alignment, content) {
@@ -458,35 +421,109 @@ function addImageToMessage(message, image) {
 
 
 function displayMessageAtBottom(msg) {
-  msgerChat.appendChild(msg);
+  messageArea.appendChild(msg);
   scrollToBottom();
 }
 
 
 function scrollToBottom() {
     // Probably fine, but it could scroll a bit more...
-    msgerChat.scrollTop = msgerChat.scrollHeight;
+    messageArea.scrollTop = messageArea.scrollHeight;
 }
 
-// Utils
-function get(selector) {
-  return document.querySelector(".msger").querySelector(selector);
+
+//// MODALS
+
+
+const attachmentInput = document.getElementById('attachment-input');
+const modal = document.getElementById('image-modal');
+const modalImage = document.getElementById('modal-image');
+const imageLabel = document.getElementById('image-label');
+const sendButton = document.getElementById('send-image-button');
+
+function closeImageUploadModal() {
+    modal.style.display = "none";
+    imageLabel.value = "";
+    inputBar.focus();
 }
 
-function max(array) {
-    let max = -Infinity;
-    for(let i = 0; i < array.length; i++ ) {
-        if (array[i] > max) {
-            max = array[i];
-        }
+// Handle Send Button Click
+sendButton.addEventListener('click', () => {
+    const labelText = imageLabel.value || "";
+
+    // Log data or process the image and label
+    console.log('Image sent with label:', labelText);
+
+    // Optionally append the image to the chat area
+    const imgElement = document.createElement('img');
+    imgElement.src = modalImage.src;
+    imgElement.alt = labelText;
+    imgElement.style.maxHeight = '200px';
+    imgElement.style.marginRight = '10px';
+    imgElement.style.borderRadius = '8px';
+
+    const labelElement = document.createElement('span');
+    labelElement.textContent = labelText;
+    labelElement.style.marginLeft = '5px';
+
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.appendChild(imgElement);
+    container.appendChild(labelElement);
+
+    const message = createMessage("Ja", CONST.ALIGMENT_RIGHT, labelText);
+    addImageToMessage(message, imgElement);
+    displayMessageAtBottom(message);
+    sendMessage(message);
+
+    // Close the modal
+    closeImageUploadModal();
+
+    setTimeout(() => {
+        // Clear the input since we have used it for the modal
+        clearInputBar();
+    }, 0);
+});
+
+
+// Close the modal when clicking outside the content
+modal.addEventListener('click', (event) => {
+    if (event.target === modal) { // This has to be here!!!
+        closeImageUploadModal();
     }
+})
 
-    return max;
-}
+// Handle file selection
+attachmentInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const imageUrl = e.target.result;
 
-function formatDate(date) {
-  const h = "0" + date.getHours();
-  const m = "0" + date.getMinutes();
+            // Set the modal image source
+            modalImage.src = imageUrl;
 
-  return `${h.slice(-2)}:${m.slice(-2)}`;
-}
+            imageLabel.value = inputBar.value;
+
+            // Show the modal
+            modal.style.display = 'flex';
+            imageLabel.style.display = "flex";
+            sendButton.style.display = "absolute";
+            // Focus the label input
+            imageLabel.focus();
+        };
+        reader.readAsDataURL(file);
+    } else {
+        alert('Please select a valid image file.');
+    }
+});
+
+// Handle pressing enter at the modal
+imageLabel.addEventListener("keydown", (event) => {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        sendButton.click();
+    }
+});

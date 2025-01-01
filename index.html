@@ -1,100 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+    <!-- Encoding -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale = 1.0, maximum-scale=1.0, user-scalable=no" />
-    <link rel="stylesheet" href="styles/index.css">
-    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
-    <!-- <meta http-equiv="Cache-control" content="public"> -->
+    <!-- Allow user scalability to support image zooming -->
+    <meta name="viewport" content="width=device-width, initial-scale = 1.0, maximum-scale=1.0" />
+
+    <!-- Cache -->
+    <meta http-equiv="Cache-control" content="public, max-age=604800">
+
+    <!-- Page Title -->
     <title>Holub</title>
-    <script>
-        // Make the dark-theme the default one
-        document.documentElement.classList.add('dark-scheme');
-    </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
-    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
-    <style>
-        /* Modal Styles */
-        .modal {
-            display: none; /* Hidden by default */
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.7); /* Black background with transparency */
-            justify-content: center;
-            align-items: center;
-        }
 
-        .modal-content {
-            background-color: #201c1c;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            width: 600px;
-        }
+    <!-- Page Icon -->
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
 
-        .modal-content img {
-            max-width: 100%;
-            height: auto;
-            margin-bottom: 15px;
-        }
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles/fonts.css">
+    <link rel="stylesheet" href="styles/schemes.css">
+    <link rel="stylesheet" href="styles/index.css">
+    <link rel="stylesheet" href="assets/css/fontawesome.css">
+    <link rel="stylesheet" href="assets/css/solid.css">
 
-        .modal-content input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        .modal-content button {
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-        }
-
-        .modal-content button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    <!-- Libraries -->
+    <script src="libs/chart.js"></script>
 </head>
-<body>
-    <!-- Debugging Stuff -->
-    <!-- <canvas id="waveform" width="80" height="80" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-height: 60vh; max-width: 60vw;"></canvas> -->
 
-    <!-- Chat Container -->
-    <section class="msger">
-        <header class="msger-header">
-            <div class="msger-header-title">Holubník Web <small>v1.7</small></div>
-            <button id="config-button" class="msger-config-btn" title="Nastavenia"><i class="fas fa-gear"></i></button>
+<body>
+    <section id="app">
+        <header class="header">
+            <div id="header-title"><b>AudioModem</b> <small>v1.7</small></div>
+            <button id="theme-toggle-button" title="Vzhľad">
+                <i class="fas fa-sun"></i>
+            </button>
+            <div id="tab-buttons">
+                <button id="chat-button" class="tab-button" title="Oscilátor">
+                    <i class="fa-solid fa-message"></i>
+                </button>
+                <button id="oscillator-button" class="tab-button" title="Oscilátor">
+                    <i class="fas fa-wave-square"></i>
+                </button>
+                <button id="graph-button" class="tab-button" title="Zobraziť Spektogram">
+                    <i class="fas fa-chart-simple"></i>
+                </button>
+                <button id="config-button" class="tab-button" title="Nastavenia">
+                    <i class="fas fa-gear"></i>
+                </button>
+            </div>
         </header>
 
-        <main class="msger-chat">
-        </main>
+        <!-- TODO FIX STYLE FLESHING + ADD CACHING -->
+        <div id="tabs">
+            <div id="tab-chat" class="tab">
+                <!-- Chat Display Area -->
+                <main id="message-area" class="message-area"></main>
 
-        <form class="msger-inputarea">
-            <div id="left-input-toolbar">
-                <label for="attachment-input" class="msger-attachment-btn">
-                    <input id="attachment-input" class="msger-attachment-input" type="file" accept=".png, .jpg, .jpeg">
-                    <i class="fas fa-plus" style="margin: auto;"></i>
+                <form id="input-area">
+                    <div id="left-input-toolbar">
+                        <label for="attachment-input" id="attachment-button">
+                            <input id="attachment-input" type="file" accept=".png, .jpg, .jpeg">
+                            <i class="fas fa-plus"></i>
+                        </label>
+                    </div>
+
+                    <textarea id="input-bar" placeholder="Zadajte správu..." maxlength="256" rows="1"></textarea>
+
+                    <div id="right-input-toolbar">
+                        <button id="send-message-button" type="button">Odoslať</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="tab-config" class="tab">
+                <header class="config-header">
+                    <h2><div class="config-header-title"><b>Nastavenia</b></div></h2>
+                </header>
+
+                <label class="config-option">
+                    <span>Rýchlosť prenosu</span>
+                    <input id="bits-per-frame" type="range" min="1" max="8" step="1" value="4">
+                    <span id="bits-per-frame-display">4</span> bit/s
                 </label>
+
+                <!-- <div class="settings-section">
+                    <h3>Jazyk</h3>
+                    <select id="language-select">
+                        <option value="sk">Slovenčina</option>
+                        <option value="en">English</option>
+                        <option value="cs">Čeština</option>
+                    </select>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Súkromie</h3>
+                    <label class="settings-option">
+                        <span>Povoliť sledovanie analytických údajov</span>
+                        <input id="analytics-tracking-toggle" type="checkbox">
+                    </label>
+                    <label class="settings-option">
+                        <span>Povoliť personalizované reklamy</span>
+                        <input id="personalized-ads-toggle" type="checkbox">
+                    </label>
+                </div> -->
             </div>
 
-            <textarea class="msger-input" placeholder="Zadajte správu..." maxlength="256" rows="1"></textarea>
-
-            <div id="right-input-toolbar">
-                <button id="submit-button" class="msger-send-btn" type="button">Odoslať</button>
+            <div id="tab-graph" class="tab">
+                <canvas id="fft-result-graph" width="80" height="80"
+                    style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-height: 60vh; max-width: 60vw;"></canvas>
+                <canvas id="input-waveform-graph" width="500" height="500"
+                    style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-height: 60vh; max-width: 60vw;"></canvas>
             </div>
-        </form>
+
+            <div id="tab-oscillator" class="tab">
+                <label class="config-option">
+                    <span>Frekvencia [Hz]</span>
+                    <input id="frequency-slider" class="oscillator-slider" type="range" min="1" max="20000" step="1" value="440">
+                    <span id="frequency-slider-display">440</span> Hz
+                </label>
+
+                <label class="config-option">
+                    <span>Amplitúda [%]</span>
+                    <input id="amplitude-slider" class="oscillator-slider" type="range" min="1" max="100" step="1" value="25">
+                    <span id="amplitude-slider-display">25</span> %
+                </label>
+
+                <label class="config-option">
+                    <span>Fáza [°]</span>
+                    <input id="phase-slider" class="oscillator-slider" type="range" min="0" max="360" step="1" value="0">
+                    <span id="phase-slider-display">0</span> °
+                </label>
+
+                <button id="play-oscillator-button">Prehrať</button>
+
+                <canvas id="oscillator-waveform" width="500" height="500"
+                    style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-height: 60vh; max-width: 60vw;"></canvas>
+            </div>
+        </div>
     </section>
 
     <!-- Image Upload Modal -->
@@ -102,11 +144,18 @@
         <div class="modal-content">
             <img id="modal-image" alt="Náhľad obrázka">
             <input id="image-label" type="text" placeholder="Zadajte popis obrázka...">
-            <button id="send-button">Odoslať</button>
+            <button id="send-image-button">Odoslať</button>
         </div>
     </div>
 </body>
 
 <script type="module" src="src/bindings.js"></script>
 <script type="module" src="src/index.js"></script>
+<script type="module" src="src/handlers.js"></script>
+<script>
+    // Make the dark-theme the default one
+    document.documentElement.classList.add('dark-scheme');
+    document.getElementById("theme-toggle-button").dispatchEvent(new Event('click'));
+</script>
+
 </html>
