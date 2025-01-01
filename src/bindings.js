@@ -11,6 +11,7 @@ export const LIBRARY_PATH = "libs/audio_modem.wasm";
 // MEMORY:
 // - Max message length is 512 characters, each one of them can have 4 bytes
 //   that means we need to allocate at least 2048 bytes of memory for the input.
+// Looks like constants in the memory are stored from 1024.
 export const INPUT_BUFFER_PTR = 0; // can go up to 2047 if needed
 export const OUTPUT_BUFFER_PTR = 4096; // Up to 2^16
 
@@ -39,6 +40,7 @@ export function getOutputBuffer(length) {
 ////////////////////////////////////
 
 async function _init() {
+    //
     /// TODO: Figure out how to change the size of the memory.
     // Increase the memory size by updating the `memory` property with a larger initial value and/or maximum value.
     // const memory = new WebAssembly.Memory({

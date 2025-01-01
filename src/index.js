@@ -110,6 +110,8 @@ async function startRecording() {
                 for (let i = 0; i < Math.floor(chunkBuffer.length / CONST.SAMPLE_CHUNK_SIZE); i++) {
                     const chunk = chunkBuffer.slice(0, CONST.SAMPLE_CHUNK_SIZE)
                     chunkBuffer = chunkBuffer.slice(CONST.SAMPLE_CHUNK_SIZE);
+                    WASM.fillInputBuffer(chunkBuffer);
+
                     console.log(chunkBuffer.length)
                     console.log(chunk.length, chunkBuffer.length)
                     console.log(getPeakFrequency(chunk));
