@@ -5,6 +5,7 @@ html {
 
 html * {
     font-family: JetBrains Mono, 'Segoe UI', 'Open Sans', 'Helvetica Neue', sans-serif;
+    /* transition: all 0.23s; */
 }
 
 *,
@@ -41,6 +42,40 @@ body {
     background-image: var(--msger-bg-image);
     background-size: cover;
     box-shadow: 0 15px 15px -5px rgba(0, 0, 0, 0.2);
+    transition: all 0.23s;
+}
+
+/********************************/
+/********   SCROLLBARS   ********/
+/********************************/
+
+::-webkit-scrollbar {
+    width: 6px;
+    padding-right: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--msger-scrollbar-track);
+    margin-right: 10px;
+    padding-right: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--msger-scrollbar-thumb);
+    border-radius: 3px;
+    padding-right: 10px;
+}
+
+/********************************/
+/********   BUTTONS      ********/
+/********************************/
+
+:disabled {
+    background-color: grey;
+    color: #666;
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
 }
 
 /********************************/
@@ -84,9 +119,41 @@ body {
 
 .header button:hover {
     color: var(--msger-header-hover-colour);
-    transition: all 0.23s;
     cursor: pointer;
     margin-left: 10px;
+}
+
+.unselectable {
+    /* Prevent text selection */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    user-select: none; /* Standard */
+}
+
+.separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.separator::before,
+.separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #5d5d5d75;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.separator:not(:empty)::before {
+    margin-right: .5em;
+}
+
+.separator:not(:empty)::after {
+    margin-left: .5em;
 }
 
 /********************************/
@@ -129,12 +196,75 @@ body {
     align-items: center;
 }
 
+.modal .field-title {
+    padding-bottom: 10px;
+    text-align: left;
+}
+
+.modal .modal-header {
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    user-select: none; /* Standard syntax */
+}
+
+.modal .modal-form {
+    /* margin: 0 auto; */
+    margin-top: 40px; /* Spacing between the header and the form */
+    width: 100%;
+    /* padding-bottom: 20px; */
+}
+
+.modal .modal-form .field {
+    margin-bottom: 25px;
+}
+
+.modal .modal-form .field:last-of-type {
+    margin-bottom: 0px;
+}
+
+/* .modal .modal-submit-button {
+    margin-top: 20px;
+} */
+
+.modal .field-input {
+    display: flex;
+    align-items: flex-start;
+}
+
+#remember-me {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border: 2px solid black;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+
+
+
+/* .modal .field {
+    margin: 0 auto;
+    width: 80%;
+} */
+
 .modal-content {
     background-color: #201c1c;
     border-radius: 10px;
-    padding: 20px;
+    padding: 40px;
     text-align: center;
-    width: 600px;
+    width: 500px;
+    transition: all 0.23s;
+}
+
+#login-modal .modal-content .modal-header .modal-header-title {
+    font-size: 36px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-weight: bold;
 }
 
 .modal-content img {
@@ -146,33 +276,31 @@ body {
 .modal-content input[type="text"] {
     width: 100%;
     padding: 10px;
-    margin-bottom: 15px;
     border: 1px solid #ccc;
     border-radius: 5px;
     font-size: 16px;
 }
 
 .modal-content button {
-    padding: 10px 20px;
+    padding: 10px;
     font-size: 16px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     background-color: #007bff;
     color: white;
+    width: 100%;
 }
 
 .modal-content button:hover {
     background-color: #0056b3;
 }
 
-
 /********************************/
 /******** MOBILE DEVICES ********/
 /********************************/
 
-
-@media (max-width: 512px) {
+@media (max-width: 600px) {
     #app {
         margin: 0px;
         border-radius: 0px;
@@ -183,7 +311,11 @@ body {
         min-height: fit-content;
     }
 
-    #send-message-button {
+    .modal-content {
+        width: 300px;
+    }
+
+    #header-title {
         display: none;
     }
 

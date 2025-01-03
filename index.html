@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sk">
 
 <head>
     <!-- Encoding -->
@@ -9,6 +9,11 @@
 
     <!-- Cache -->
     <meta http-equiv="Cache-control" content="public, max-age=604800">
+
+    <!-- Debugging Stuff -->
+    <script>
+        print = console.log;
+    </script>
 
     <!-- Page Title -->
     <title>Holub</title>
@@ -22,6 +27,12 @@
     <link rel="stylesheet" href="styles/index.css">
     <link rel="stylesheet" href="assets/css/fontawesome.css">
     <link rel="stylesheet" href="assets/css/solid.css">
+
+    <!-- Tab Styles -->
+    <link rel="stylesheet" href="styles/tabs/chat.css">
+    <link rel="stylesheet" href="styles/tabs/config.css">
+    <link rel="stylesheet" href="styles/tabs/graph.css">
+    <link rel="stylesheet" href="styles/tabs/oscillator.css">
 
     <!-- Libraries -->
     <script src="libs/chart.js"></script>
@@ -50,13 +61,13 @@
             </div>
         </header>
 
-        <!-- TODO FIX STYLE FLESHING + ADD CACHING -->
+        <!-- TODO ADD CACHING -->
         <div id="tabs">
             <div id="tab-chat" class="tab">
                 <!-- Chat Display Area -->
                 <main id="message-area" class="message-area"></main>
 
-                <form id="input-area">
+                <form id="input-area" class="input-area">
                     <div id="left-input-toolbar">
                         <label for="attachment-input" id="attachment-button">
                             <input id="attachment-input" type="file" accept=".png, .jpg, .jpeg">
@@ -64,10 +75,11 @@
                         </label>
                     </div>
 
-                    <textarea id="input-bar" placeholder="Zadajte správu..." maxlength="256" rows="1"></textarea>
+                    <textarea id="input-bar" class="message-input" placeholder="Zadajte správu..." rows="1"></textarea>
 
                     <div id="right-input-toolbar">
                         <button id="send-message-button" type="button">Odoslať</button>
+                        <button id="send-message-button-with-icon" type="button"><i class="fas fa-paper-plane"></i></button>
                     </div>
                 </form>
             </div>
@@ -76,6 +88,18 @@
                 <header class="config-header">
                     <h2><div class="config-header-title"><b>Nastavenia</b></div></h2>
                 </header>
+
+                <label class="config-option">
+                    <span>Používateľské meno</span>
+                    <input id="username-config-input" type="text" value="Anonymný" maxlength="16">
+                    <input id="remember-me-config" type="checkbox">
+                    <label for="remember-me-config">Zapamätať si ma</label>
+                </label>
+
+                <!-- <div class="config-option">
+                    <input id="remember-me-config" type="checkbox">
+                    <label for="remember-me-config">Zapamätať si ma</label>
+                </div> -->
 
                 <label class="config-option">
                     <span>Rýchlosť prenosu</span>
@@ -143,8 +167,46 @@
     <div id="image-modal" class="modal">
         <div class="modal-content">
             <img id="modal-image" alt="Náhľad obrázka">
-            <input id="image-label" type="text" placeholder="Zadajte popis obrázka...">
-            <button id="send-image-button">Odoslať</button>
+            <div class="modal-form">
+                <div id="image-label-field" class="field">
+                    <input id="image-label" class="message-input" type="text" placeholder="Zadajte popis obrázka...">
+                </div>
+                <div id="submit-field" class="field">
+                    <button id="send-image-button">Odoslať</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <img src="assets/favicon.ico" alt="Holub Icon">
+                <div class="modal-header-title">Holub™</div>
+            </div>
+
+            <div class="modal-form">
+                <div id="username-field" class="field">
+                    <div class="field-title">
+                        PREZÝVKA
+                    </div>
+                    <div class="field-input">
+                        <input id="username-input" type="text" class="username-input" placeholder="Ako ťa máme volať?">
+                    </div>
+                </div>
+
+                <div id="remember-me-field" class="field">
+                    <div class="field-input">
+                        <input id="remember-me" type="checkbox" class="field-checkbox">
+                        <label for="remember-me">Zapamätať si ma</label>
+                    </div>
+                </div>
+
+                <div id="submit-field" class="field">
+                    <button id="login-button" class="modal-submit-button" disabled>Pridať sa</button>
+                </div>
+            </div>
         </div>
     </div>
 </body>

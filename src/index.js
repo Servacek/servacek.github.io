@@ -17,9 +17,6 @@ const inputArea = document.getElementById("input-area");
 const inputBar = document.getElementById("input-bar");
 const messageArea = document.getElementById("message-area");
 const sendMessageButton = document.getElementById("send-message-button");
-if (!window.matchMedia("(max-width: 512px)").matches && !CONST.DEBUG_MODE) {
-    inputBar.focus(); // Default focus
-}
 
 ////////////////////
 
@@ -32,7 +29,7 @@ const textEndcoder = new TextEncoder("utf-8");
 
 print = console.log
 
-async function startRecording() {
+async function tryStartRecording() {
     navigator.mediaDevices.getUserMedia({
         audio: {
             echoCancellation: false,
@@ -186,9 +183,11 @@ async function startRecording() {
         recorder.connect(context.destination);
     }).catch(function (e) { // This should handle even the revokes and everything.
         // TODO: Handle not being allowed to record audio.
-        console.error(e);
-        console.error("WE CANNOT RECORD AUDIO, WHAT CAN WE DO???!!");
-        console.error("IMPLEMENT WRITE ONLY MODE FOR ONE DIRECTIONAL COMMUNICATION!!!");
+        // console.error(e);
+        // console.error("WE CANNOT RECORD AUDIO, WHAT CAN WE DO???!!");
+        // console.error("IMPLEMENT WRITE ONLY MODE FOR ONE DIRECTIONAL COMMUNICATION!!!");
+
+        displayMessageAtBottom(systemMessage("Chýba oprávnenia na používanie mikrofónu, bez tohto oprávnenia nebudete môcť príjimať správy!", "warn"));
     });
 }
 
@@ -198,7 +197,7 @@ function sendNextMessage() {
     }
 
     const nextMessage = messagesToSend.shift();
-    if (nextMessage) {
+    if (nextMessage && nextMessage.waveform) {
         // Check if the data are normalized, if not normalize it
         // since some browsers require them normalized.
         const messageWaveformMax = max(nextMessage.waveform);
@@ -228,71 +227,6 @@ function sendNextMessage() {
     }
 }
 
-startRecording();
-
-// let rxBuffer;
-// navigator.mediaDevices.getUserMedia({ audio: false, video: false })
-//     .then(stream => {
-//         const audioContext = new AudioContext();
-//         const source = audioContext.createBufferSource(stream);
-//         const processor = audioContext.createScriptProcessor(CONST.SAMPLE_BLOCK_SIZE, CONST.INPUT_CHANNELS, CONST.OUTPUT_CHANNELS);
-
-//         source.connect(processor);
-
-//         processor.onaudioprocess = e => {
-//             const inputBuffer = e.inputBuffer.getChannelData(0);
-//             if (!rxBuffer) {
-//                 rxBuffer = audioContext.createBuffer(CONST.INPUT_CHANNELS, 16384, CONST.SAMPLING_FREQUENCY);
-//             }
-//             rxBuffer.copyToChannel(inputBuffer, 0);
-//         };
-
-        // setInterval(() => {
-        //     if (messageQueue.length > 0) {
-        //         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-        //         // Assuming `waveformArray` is the array containing your sine waveform data
-        //         // For example, it should be a Float32Array of sample values between -1 and 1
-        //         let waveformArray = messageQueue.shift();
-        //         console.info(Array.isArray(waveformArray));
-        //         console.info(waveformArray);
-
-        //         waveformArray = waveformArray.map(x => x / max(waveformArray));
-
-        //         console.log(waveformArray, JSON.stringify(waveformArray))
-
-        //         const buffer = audioContext.createBuffer(1, waveformArray.length, CONST.SAMPLING_FREQUENCY);
-        //         const channelData = buffer.getChannelData(0); // Get the first (and only) channel
-        //         channelData.set(waveformArray); // Copy the sine wave data into the buffer
-
-        //         // 4. Create a source and play the buffer
-        //         const source = audioContext.createBufferSource();
-        //         source.buffer = buffer;
-        //         source.connect(audioContext.destination);
-
-
-        //         console.log("START");
-        //         // Start playback
-        //         source.start();
-
-        //         // let currentColorIndex = 0;
-        //         // const colorInterval = setInterval(() => {
-        //         //     currentColorIndex = (currentColorIndex + 1) % 360;
-        //         //     const bubble = document.querySelectorAll(".msg-bubble:last-child");
-        //         //     const color = `hsl(${Math.floor(120 * currentColorIndex / 360)}, 100%, 50%)`;
-        //         //     bubble.style.backgroundColor = color;
-        //         // }, 1000);
-        //         source.onended = () => {
-        //             window.dispatchEvent(new Event("messageSent"));
-        //         };
-
-        //         currentlySendingMessage.EventEmitter
-
-        //         //clearInterval(playBuffer);
-        //     }
-        // }, 100);
-    // });
-
 function sendMessage(message) {
     messagesToSend.push(message)
     sendNextMessage();
@@ -303,8 +237,10 @@ function sendMessage(message) {
 }
 
 inputBar.oninput = function() {
-    this.style.height = 'auto'; // Reset height to calculate scrollHeight
-    this.style.height = `${Math.min(this.scrollHeight, 200)}px`; // Adjust 200 to match max-height
+    //this.style.height = 'auto'; // Reset height to calculate scrollHeight
+    //this.style.height = `${Math.min(this.scrollHeight, 200)}px`; // Adjust 200 to match max-height
+
+    sendMessageButton.disabled = !this.value.trim();
 }
 
 // Handle submit button being pressed
@@ -324,7 +260,7 @@ inputArea.submit = () => {
 
     /// @TODO: Add option to change the username.
     // Display the message first.
-    const newMessage = createMessage("Ja", CONST.ALIGMENT_RIGHT, msgText)
+    const newMessage = createSelfMessage(msgText);
     clearInputBar();
     displayMessageAtBottom(newMessage);
 
@@ -344,10 +280,17 @@ function clearInputBar() {
     inputBar.oninput();
 }
 
-function createMessage(author, alignment, content) {
+function createMessageBase() {
     const date = new Date();
     const msg = document.createElement("div");
-    msg.classList.add("msg", `${alignment}-msg`);
+    msg.date = date;
+
+    return msg;
+}
+
+function createUserMessage(author, alignment, content) {
+    const msg = createMessageBase();
+    msg.classList.add("user-msg", `${alignment}-user-msg`);
 
     const bubble = document.createElement("div");
     bubble.classList.add("msg-bubble");
@@ -366,7 +309,7 @@ function createMessage(author, alignment, content) {
 
     const time = document.createElement("div");
     time.classList.add("msg-info-time");
-    time.textContent = formatDate(date);
+    time.textContent = formatDate(msg.date);
 
     info.append(name, time);
 
@@ -400,6 +343,22 @@ function createMessage(author, alignment, content) {
     return msg;
 }
 
+function getUsername() {
+    const usernameConfigInput = document.getElementById("username-config-input");
+    return usernameConfigInput.value || localStorage.getItem("username");
+}
+
+function createSelfMessage(text, image=null) {
+    const username = getUsername();
+    const message = createUserMessage(username, CONST.ALIGMENT_RIGHT, text);
+
+    if (image != null) {
+        addImageToMessage(message, image);
+    }
+
+    return message;
+}
+
 function addImageToMessage(message, image) {
     const imgModal = document.createElement('div');
     imgModal.classList.add('img-modal');
@@ -410,7 +369,7 @@ function addImageToMessage(message, image) {
     sendButton.style.display = 'none';
     image.addEventListener('click', (e) => {
         e.stopPropagation();
-        modal.style.display = 'flex';
+        imageModal.style.display = 'flex';
         modalImage.src = image.src;
     });
 
@@ -419,10 +378,28 @@ function addImageToMessage(message, image) {
     imgModal.append(imgModalImg);
 }
 
-
 function displayMessageAtBottom(msg) {
-  messageArea.appendChild(msg);
-  scrollToBottom();
+    const lastMessage = messageArea.lastElementChild;
+    const currentDate = new Date().toISOString().split('T')[0];
+    const lastMessageDate = lastMessage ? new Date(lastMessage.date) : null;
+    const currentDateObject = new Date(currentDate);
+    const dayDiffers = lastMessageDate ? (
+        lastMessageDate.getDate() !== currentDateObject.getDate() &&
+        lastMessageDate.getMonth() !== currentDateObject.getMonth() &&
+        lastMessageDate.getFullYear() !== currentDateObject.getFullYear()
+    ) : null;
+
+    if (!lastMessage || dayDiffers) {
+        const separator = document.createElement('div');
+        separator.className = 'separator unselectable';
+        const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+        const formattedDate = currentDateObject.toLocaleDateString(document.documentElement.lang, dateOptions);
+        separator.textContent = formattedDate;
+        messageArea.appendChild(separator);
+    }
+
+    messageArea.appendChild(msg);
+    scrollToBottom();
 }
 
 
@@ -436,13 +413,13 @@ function scrollToBottom() {
 
 
 const attachmentInput = document.getElementById('attachment-input');
-const modal = document.getElementById('image-modal');
+const imageModal = document.getElementById('image-modal');
 const modalImage = document.getElementById('modal-image');
 const imageLabel = document.getElementById('image-label');
 const sendButton = document.getElementById('send-image-button');
 
 function closeImageUploadModal() {
-    modal.style.display = "none";
+    imageModal.style.display = "none";
     imageLabel.value = "";
     inputBar.focus();
 }
@@ -472,8 +449,7 @@ sendButton.addEventListener('click', () => {
     container.appendChild(imgElement);
     container.appendChild(labelElement);
 
-    const message = createMessage("Ja", CONST.ALIGMENT_RIGHT, labelText);
-    addImageToMessage(message, imgElement);
+    const message = createSelfMessage(message, imgElement);
     displayMessageAtBottom(message);
     sendMessage(message);
 
@@ -486,10 +462,25 @@ sendButton.addEventListener('click', () => {
     }, 0);
 });
 
+function systemMessage(text, type, icon=null) {
+    const msg = createMessageBase();
+    const content = document.createElement("span");
+    msg.className = "system-message system-message-" + type || "info";
+    content.textContent = text;
+
+    const iconElement = document.createElement("i");
+    iconElement.className = icon || CONST.SYSTEM_MESSAGE_ICONS[type];
+    content.insertBefore(iconElement, content.firstChild);
+
+    content.style.color = CONST.SYSTEM_MESSAGE_COLORS[type];
+
+    msg.appendChild(content);
+    return msg;
+}
 
 // Close the modal when clicking outside the content
-modal.addEventListener('click', (event) => {
-    if (event.target === modal) { // This has to be here!!!
+imageModal.addEventListener('click', (event) => {
+    if (event.target === imageModal) { // This has to be here!!!
         closeImageUploadModal();
     }
 })
@@ -508,7 +499,7 @@ attachmentInput.addEventListener('change', (event) => {
             imageLabel.value = inputBar.value;
 
             // Show the modal
-            modal.style.display = 'flex';
+            imageModal.style.display = 'flex';
             imageLabel.style.display = "flex";
             sendButton.style.display = "absolute";
             // Focus the label input
@@ -521,9 +512,34 @@ attachmentInput.addEventListener('change', (event) => {
 });
 
 // Handle pressing enter at the modal
-imageLabel.addEventListener("keydown", (event) => {
+imageModal.addEventListener("keydown", (event) => {
     if (event.key === 'Enter') {
         event.preventDefault();
         sendButton.click();
     }
+});
+
+/// AFTER LOGIN
+
+let userLoggedIn = false;
+let wasmLoaded = false;
+
+const initStateUpdate = () => {
+    if (userLoggedIn && wasmLoaded) {
+        tryStartRecording();
+    }
+}
+
+window.addEventListener("user-logged", () => {
+    userLoggedIn = true;
+    if (!window.matchMedia("(max-width: 512px)").matches) {
+        inputBar.focus(); // Default focus
+    }
+    displayMessageAtBottom(systemMessage("Vitaj " + getUsername() + "! Svoju prezývku si môžeš kedykoľvek zmeniť v nastaveniach.", "welcome"));
+    initStateUpdate();
+});
+
+window.addEventListener("wasm-library-loaded", () => {
+    wasmLoaded = true;
+    initStateUpdate();
 });

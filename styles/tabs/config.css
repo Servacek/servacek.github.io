@@ -6,3 +6,7 @@
 .config-header-title {
     padding-bottom: 20px;
 }
+
+.tab .config-option {
+    margin-bottom: 10px;
+}

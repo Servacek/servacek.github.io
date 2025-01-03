@@ -1,4 +1,5 @@
 
+import * as CONSTS from "./constants.js"
 
 // TABS
 
@@ -47,10 +48,10 @@ for (const button of TAB_BUTTONS) {
     tab.button = button;
     tab.file = name + ".js";
 
-    const tabStyle = document.createElement("link");
-    tabStyle.rel = "stylesheet";
-    tabStyle.href = "styles/tabs/" + name + ".css";
-    document.head.appendChild(tabStyle);
+    // const tabStyle = document.createElement("link");
+    // tabStyle.rel = "stylesheet";
+    // tabStyle.href = "styles/tabs/" + name + ".css";
+    // document.head.appendChild(tabStyle);
 
     const tabScript = document.createElement("script");
     tabScript.type = "module";
@@ -74,6 +75,16 @@ for (const button of TAB_BUTTONS) {
 // Make sure the tabs div is visible
 document.getElementById("tabs").style.display = "flex";
 
+// LIMITS
+
+for (const usernameInput of document.getElementsByClassName("username-input")) {
+    usernameInput.maxLength = CONSTS.MAX_USERNAME_LENGTH;
+}
+
+for (const messageInput of document.getElementsByClassName("message-input")) {
+    messageInput.maxLength = CONSTS.MAX_MESSAGE_LENGTH;
+}
+
 
 // THEME TOGGLE BUTTON
 
@@ -81,4 +92,69 @@ document.getElementById("theme-toggle-button").addEventListener("click", () => {
     const darkMode = document.documentElement.classList.toggle('dark-scheme');
     document.getElementById("theme-toggle-button").innerHTML = darkMode
         	? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+});
+
+// LOGIN MODAL
+
+const usernameConfigInput = document.getElementById("username-config-input");
+const usernameModalInput = document.getElementById('username-input');
+const loginModal = document.getElementById('login-modal');
+const loginButton = document.getElementById('login-button');
+const loginRememberMe = document.getElementById('remember-me');
+const loginRememberMeConfig = document.getElementById('remember-me-config');
+
+loginRememberMeConfig.addEventListener("change", () => {
+    if (loginRememberMeConfig.checked) {
+        localStorage.setItem('username', usernameConfigInput.value);
+    } else {
+        localStorage.removeItem('username');
+    }
+});
+
+usernameConfigInput.addEventListener("input", () => {
+    if (loginRememberMe.checked) {
+        localStorage.setItem('username', usernameConfigInput.value);
+    }
+})
+
+usernameModalInput.addEventListener("input", () => {
+    loginButton.disabled = !usernameModalInput.value.trim()
+})
+
+document.addEventListener('DOMContentLoaded', () => {
+    const savedUsername = localStorage.getItem('username');
+    if (!savedUsername) {
+        loginModal.style.display = 'flex'; // Show the modal
+        usernameModalInput.focus(); // Focus inside
+        loginButton.addEventListener('click', () => {
+            const usernameInput = document.getElementById('username-input').value;
+            if (usernameInput) {
+                if (loginRememberMe.checked) {
+                    localStorage.setItem('username', usernameInput);
+                }
+
+                usernameConfigInput.value = usernameInput;
+                loginRememberMeConfig.checked = loginRememberMe.checked;
+                loginModal.style.display = 'none'; // hide the modal
+            }
+
+            window.dispatchEvent(new CustomEvent('user-logged'));
+        });
+    } else {
+        usernameConfigInput.value = savedUsername;
+        window.dispatchEvent(new CustomEvent('user-logged'));
+        loginRememberMeConfig.checked = true; // Remembered the username so this is most likely true;
+    }
+});
+
+loginModal.addEventListener('show', () => {
+    console.log('Login modal is displayed');
+    usernameModalInput.focus();
+});
+
+loginModal.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        loginButton.click();
+    }
 });

@@ -6,6 +6,23 @@
 export const ALIGMENT_RIGHT = "right"
 export const ALIGMENT_LEFT  = "left";
 
+export const MAX_USERNAME_LENGTH = 16;
+export const MAX_MESSAGE_LENGTH = 128;
+
+export const SYSTEM_MESSAGE_ICONS = {
+    ["info"]: "fas fa-circle-info",
+    ["warn"]: "fas fa-triangle-exclamation",
+    ["error"]: "fas fa-circle-xmark",
+    ["welcome"]: "fas fa-hands"
+};
+
+export const SYSTEM_MESSAGE_COLORS = {
+    ["info"]: "cyan",
+    ["warn"]: "yellow",
+    ["error"]: "red",
+    ["welcome"]: "green"
+};
+
 export const DEBUG_MODE = true;
 
 export const TWOPI = 2 * Math.PI;

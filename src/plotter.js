@@ -68,7 +68,7 @@ export function plotWaveform(canvas, waveform) {
     ctx.beginPath();
     ctx.moveTo(0, centerY);
 
-    for (let i = 0; i < bufferLength; i++) {
+    for (let i = 10; i < bufferLength; i++) {
         const x = i * sliceWidth;
         const y = centerY + waveform[i] * centerY; // Normalize the data to fit within canvas height
         ctx.lineTo(x, y);
