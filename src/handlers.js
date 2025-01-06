@@ -1,6 +1,13 @@
 
 import * as CONSTS from "./constants.js"
 
+const usernameConfigInput = document.getElementById("username-config-input");
+const usernameModalInput = document.getElementById('username-input');
+const loginModal = document.getElementById('login-modal');
+const loginButton = document.getElementById('login-button');
+const loginRememberMe = document.getElementById('remember-me');
+const loginRememberMeConfig = document.getElementById('remember-me-config');
+
 // TABS
 
 
@@ -28,14 +35,16 @@ function closeAllTabs() {
     }
 }
 
-
-
+let currentTab = null;
 function openTab(tab) {
     closeAllTabs(); // Make sure we are the only opened tab.
     if (tab.style.display == "none") {
         tab.style.display = tab._old_style_display || "flex"; // Show the tab.
         tab.style.visibility = "visible";
     }
+
+    currentTab = tab;
+    refreshLocalStorageData()
 
     tab.button.classList.add("selected"); // Select the tab button.
 }
@@ -58,18 +67,25 @@ for (const button of TAB_BUTTONS) {
     tabScript.src = "src/tabs/" + name + ".js";
     document.head.appendChild(tabScript);
 
-
     button.addEventListener("click", () => {
         openTab(tab);
     })
 
     TABS.push(tab)
 
-    if (TABS.length == 1) { // Keep the first tab open (the default one)
-        openTab(tab);
-    } else {
-        closeTab(tab); // Make sure all other tabs are closed as well.
-    }
+    closeTab(tab); // Make sure all other tabs are closed as well.
+}
+
+const savedTabId = localStorage.getItem("current-tab");
+if (savedTabId != null) {
+    const savedTab = document.getElementById(savedTabId);
+    if (savedTab != null) {
+        openTab(savedTab);
+    } // Else the tab was either deleted or renamed, so fallback to the default tab.
+}
+
+if (currentTab == null && TABS.length > 0) {
+    openTab(TABS[0]);
 }
 
 // Make sure the tabs div is visible
@@ -96,23 +112,29 @@ document.getElementById("theme-toggle-button").addEventListener("click", () => {
 
 // LOGIN MODAL
 
-const usernameConfigInput = document.getElementById("username-config-input");
-const usernameModalInput = document.getElementById('username-input');
-const loginModal = document.getElementById('login-modal');
-const loginButton = document.getElementById('login-button');
-const loginRememberMe = document.getElementById('remember-me');
-const loginRememberMeConfig = document.getElementById('remember-me-config');
+function canUseLocalStorage() {
+    return loginRememberMe.checked || loginRememberMeConfig.checked;
+}
+
+function refreshLocalStorageData() {
+    if (canUseLocalStorage()) {
+        localStorage.setItem("username", usernameConfigInput.value);
+        if (currentTab != null) {
+            localStorage.setItem("current-tab", currentTab.id);
+        }
+    }
+}
 
 loginRememberMeConfig.addEventListener("change", () => {
     if (loginRememberMeConfig.checked) {
-        localStorage.setItem('username', usernameConfigInput.value);
+        refreshLocalStorageData();
     } else {
-        localStorage.removeItem('username');
+        localStorage.clear()
     }
 });
 
 usernameConfigInput.addEventListener("input", () => {
-    if (loginRememberMe.checked) {
+    if (canUseLocalStorage()) {
         localStorage.setItem('username', usernameConfigInput.value);
     }
 })

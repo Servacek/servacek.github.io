@@ -11,7 +11,7 @@ const phaseSlider     = document.getElementById("phase-slider");
 
 
 // So we can have up to 20000 Hz
-const SAMPLING_RATE = 40000;
+const SAMPLING_RATE = 48000;
 
 
 let f, a, p;
@@ -40,7 +40,6 @@ function onWaveformUpdated() {
 }
 
 function onWaveformParamsChanged() {
-    const samples = SAMPLING_RATE;
     // const new_waveform = new Float32Array(samples);
     // for (let i = 0; i < samples; i++) {
     //     new_waveform[i] = a * Math.sin(2 * Math.PI * f * i / samples + p);
@@ -48,6 +47,9 @@ function onWaveformParamsChanged() {
     f = frequencySlider.value;
     a = amplitudeSlider.value / 100;
     p = phaseSlider.value * Math.PI / 180;
+
+    const period = 1 / f;
+    const samples = SAMPLING_RATE//Math.ceil(SAMPLING_RATE * period);
 
     WASM.EXPORTS.waveform(f, a, p, samples, WASM.OUTPUT_BUFFER_PTR);
     const new_waveform = WASM.getOutputBuffer(samples);

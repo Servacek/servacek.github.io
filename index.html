@@ -46,7 +46,7 @@
                 <i class="fas fa-sun"></i>
             </button>
             <div id="tab-buttons">
-                <button id="chat-button" class="tab-button" title="Oscilátor">
+                <button id="chat-button" class="tab-button" title="Čet">
                     <i class="fa-solid fa-message"></i>
                 </button>
                 <button id="oscillator-button" class="tab-button" title="Oscilátor">
@@ -130,10 +130,28 @@
             </div>
 
             <div id="tab-graph" class="tab">
-                <canvas id="fft-result-graph" width="80" height="80"
-                    style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-height: 60vh; max-width: 60vw;"></canvas>
-                <canvas id="input-waveform-graph" width="500" height="500"
-                    style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-height: 60vh; max-width: 60vw;"></canvas>
+                <header class="tab-header">
+                    <div class="tab-header-title">Spektogram</div>
+                </header>
+
+                <div id="graph-controls">
+                    <span id="peak-frequency"></span>
+
+                    <label>
+                        <span id="peak-frequency"></span>
+                        <input id="waterfall-checkbox" type="checkbox">
+                        <span>Waterfall</span>
+                    </label>
+                </div>
+
+
+                <div id="waveform-graph">
+                    <canvas id="input-waveform-graph"></canvas>
+                </div>
+
+                <div id="fft-graph">
+                    <canvas id="fft-result-graph"></canvas>
+                </div>
             </div>
 
             <div id="tab-oscillator" class="tab">

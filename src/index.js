@@ -4,8 +4,7 @@
 // import {decodeBitsToString, getPeakFrequency} from './demodulator.js';
 import * as WASM from './bindings.js';
 import * as CONST from './constants.js';
-import {get, max, formatDate} from './utils.js';
-import { plotFFT, plotFFTWaterfall, plotWaveform } from './plotter.js';
+import {nextPow2, max, formatDate} from './utils.js';
 
 // TODO: Disable the send button when no content is available.
 // Provide the send button also on mobile in some minimazed form.
@@ -27,11 +26,124 @@ const textEndcoder = new TextEncoder("utf-8");
 
 ////////////////////
 
-print = console.log
+let rxRecording = false; // DEBUGGING
+// let receivedBytes = new Uint8Array(512);
+let bitsReceivedStr = "";
+// let currentByte = -1;
+// let currentBit = 0;
+
+function onChunkReceived(chunk) {
+    // TODO: Replace this with a dedicated CONFIG object.
+    // const SAMPLING_FREQUENCY = WASM.MEMORY_U32[WASM.EXPORTS.SAMPLING_FREQUENCY/4];
+    // const SAMPLE_CHUNK_SIZE = WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
+
+    // print("CHUNK", chunk.length);
+
+    const N = nextPow2(chunk.length);
+    const startPtr = WASM.MEMORY_STACK_START;
+    const realPtr = startPtr;
+    const imagPtr = realPtr + N*4;
+    const bytesPtr = imagPtr + N*4;
+
+    WASM.MEMORY_F32.set(chunk, realPtr>>2);
+
+    // Make sure the imginary array is filled with zeros.
+    // Also fill the rest of the real array padded to the nearest power of 2.
+    WASM.MEMORY_F32.fill(0, (imagPtr - (N - chunk.length) * 4)>>2, bytesPtr>>2);
+
+    // Assert that the real array is filled with the input chunk
+    for (let i = 0; i < chunk.length; i++) {
+        console.assert(WASM.MEMORY_F32[realPtr / 4 + i] === chunk[i], "Real memory incorrectly filled at index", i);
+    }
+
+    // Assert that the imaginary array is filled with zeros
+    for (let i = imagPtr >> 2; i < bytesPtr >> 2; i++) {
+        console.assert(WASM.MEMORY_F32[i] === 0, "Imaginary memory incorrectly filled at index", i);
+    }
+
+    const lastBytePtr = WASM.EXPORTS.demodulate(startPtr, N, bytesPtr);
+
+    const controlByte = WASM.MEMORY[bytesPtr];
+    if (controlByte == CONST.CBYTE.NDA) {
+        if (rxRecording) {
+            print("NO DATA");
+        }
+        return; // No data available
+    } else if (controlByte == CONST.CBYTE.SXT) {
+        if (!rxRecording) {
+            console.log("Transmission started!");
+            rxRecording = true;
+            // receivedBytes.fill(0);
+        }
+    } else if (controlByte == CONST.CBYTE.EXT) {
+        if (rxRecording) {
+            console.log("Transmission ended!");
+            rxRecording = false;
+
+
+            print(bitsReceivedStr);
+            // Convert the bits received string to an actual string
+            let receivedString = new TextDecoder("utf-8").decode(
+                new Uint8Array(bitsReceivedStr.match(/.{1,8}/g).map(byte => parseInt(byte, 2)).filter(byte => !isNaN(byte)))
+            );
+            console.log("Received String:", receivedString);
+            bitsReceivedStr = "";
+
+            if (receivedString) {
+                displayMessageAtBottom(createUserMessage("SOMEONE", CONST.ALIGMENT_LEFT, receivedString))
+            }
+
+
+            // Display the received message here:
+
+        }
+    } else if (controlByte == CONST.CBYTE.DXA) {
+        if (rxRecording) {
+            const BITS_PER_FRAME = WASM.MEMORY[WASM.EXPORTS.BITS_PER_FRAME.value];
+            // let bitsLeft = BITS_PER_FRAME;
+            for (let ptr = bytesPtr+1; ptr <= lastBytePtr; ptr++) {
+                // print("PTR", ptr);
+                // if (receivedBytes.length == 0 || currentBit > 7) {
+                //     currentBit = 0;
+                //     currentByte += 1;
+                // }
+
+                // const freeBitsInCurByte = 8 - currentBit;
+                // const nBitsToAdd = Math.min(8, bitsLeft)
+                // const nBitsActuallyAdded = Math.min(nBitsToAdd, freeBitsInCurByte);
+                // const nBitsLeftOut = nBitsToAdd - nBitsActuallyAdded;
+                const bitsToAdd = WASM.MEMORY[ptr];
+                const bitsToAddStr = bitsToAdd.toString(2).padStart(BITS_PER_FRAME, '0');
+                print(bitsToAddStr)
+                bitsReceivedStr += bitsToAddStr;
+
+                // receivedBytes[currentByte] |= bitsToAdd >> nBitsLeftOut;
+                // currentBit += nBitsActuallyAdded
+                // bitsLeft -= nBitsActuallyAdded
+
+                // if (nBitsLeftOut > 0) {
+                //     const mask = (1 << nBitsLeftOut) - 1;
+                //     receivedBytes[currentByte++] |= (bitsToAdd & mask) << currentBit;
+                // }
+            }
+            // const fullBytes = ((bytesPtr + 1) - lastBytePtr) - 1
+            // for (let i = 0; i < fullBytes; i++) { // Handle the full bytes first.
+            //     receivedBytes.push(WASM.MEMORY[(bytesPtr + 1) + i])
+            // }
+
+            // const BITS_LEFT = BITS_PER_FRAME - (fullBytes * 8);
+
+            // console.log("Received bytes:", receivedBytes);
+        }
+    } else {
+        console.warn("Unknown control byte:", controlByte);
+    }
+}
 
 async function tryStartRecording() {
     navigator.mediaDevices.getUserMedia({
         audio: {
+            // TODO: Try these out?
             echoCancellation: false,
             autoGainControl: false,
             noiseSuppression: false,
@@ -41,7 +153,6 @@ async function tryStartRecording() {
         const context = new AudioContext();
         const mediaStream = context.createMediaStreamSource(stream);
 
-        const SAMPLE_CHUNK_SIZE = WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
         // https://ciiec.buap.mx/FFT.js/
         // rounded to nearest power of 2
         const bufferSize = 2048;//Math.pow(2, Math.floor(Math.log2(SAMPLE_CHUNK_SIZE)));
@@ -49,17 +160,15 @@ async function tryStartRecording() {
             ? context.createScriptProcessor(bufferSize, CONST.INPUT_CHANNELS, CONST.OUTPUT_CHANNELS)
             : context.createJavaScriptNode(bufferSize, CONST.INPUT_CHANNELS, CONST.OUTPUT_CHANNELS);
 
-        const FFTCanvas = document.getElementById('fft-result-graph');
-        const WaveformCanvas = document.getElementById("input-waveform-graph");
-
-        let chunkBuffer = [];
+        let chunkBuffer = []; // Has to be mutable because we are overriding it.
         recorder.onaudioprocess = function (e) {
             // This seems to be already normalized which makes sense.
             // Input buffer seems to be 1024 samples long (ALWAYS).
             const inputBuffer = e.inputBuffer.getChannelData(0);
 
-            const SAMPLING_FREQUENCY = WASM.MEMORY_U32[WASM.EXPORTS.SAMPLING_FREQUENCY/4];
-            const SAMPLE_CHUNK_SIZE = WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
+
+            const SAMPLE_CHUNK_SIZE = 8192;// WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
+            const BITS_PER_FRAME = WASM.MEMORY_U32[WASM.EXPORTS.BITS_PER_FRAME/4];
 
             if (chunkBuffer.length < SAMPLE_CHUNK_SIZE) {
                 chunkBuffer.push(...inputBuffer);
@@ -68,115 +177,16 @@ async function tryStartRecording() {
                     let chunk = chunkBuffer.slice(0, SAMPLE_CHUNK_SIZE)
                     chunkBuffer = chunkBuffer.slice(SAMPLE_CHUNK_SIZE);
 
-                    const nearestPowerOf2 = Math.pow(2, Math.ceil(Math.log2(chunk.length)));
-                    // Create a new array with the nearest power of 2 length and fill with zeros
-                    var paddedWave = new Float32Array(nearestPowerOf2);
-                    paddedWave.set(chunk);
-                    chunk = paddedWave;
-                    // chunk = wave
-
-                    const startPtr = WASM.MEMORY_STACK_START;
-                    const realPtr = startPtr;
-                    const imagPtr = realPtr + chunk.length*4;
-                    const bytesPtr = imagPtr + chunk.length*4;
-
-                    WASM.MEMORY_F32.set(chunk, realPtr>>2);
-
-                    // Make sure the imginary array is filled with zeros
-                    WASM.MEMORY_F32.fill(0, imagPtr>>2, bytesPtr>>2);
-
-                    WASM.EXPORTS.demodulate(
-                        realPtr, imagPtr, chunk.length, SAMPLE_CHUNK_SIZE, bytesPtr
-                    );
-
-                    console.log("CHUNK", chunk.length, WASM.MEMORY[bytesPtr]);
-
-                    // if (canvas.paused == true) {
-                    //     continue;
-                    // }
-
-                    // // Retrieve the computed real and imaginary numbers from memory
-                    // const computedReal = new Float32Array(WASM.BUFFER, realPtr, SAMPLE_CHUNK_SIZE)
-                    // const computedImag = new Float32Array(WASM.BUFFER, imagPtr, SAMPLE_CHUNK_SIZE)
-
-                    // console.log("Computed Real:", computedReal);
-                    // console.log("Computed Imaginary:", computedImag);
-
-                    // const maxFreq = 5000; // Define the maximum frequency to display
-                    // const freqBinSize = SAMPLING_FREQUENCY / chunk.length; // Frequency resolution
-
-                    // print(freqBinSize)
-
-                    // // Generate frequencies array and calculate magnitudes
-                    // const frequencies = Array.from({ length: SAMPLE_CHUNK_SIZE / 2 }, (_, i) => Math.round(i * freqBinSize));
-                    // const magnitudes = computedReal.map((r, i) => Math.sqrt(r * r + computedImag[i] * computedImag[i]));
-
-                    // // Filter frequencies and magnitudes for the desired range
-                    // const filteredFrequencies = frequencies.filter((freq) => freq <= maxFreq);
-                    // const filteredMagnitudes = magnitudes.slice(0, filteredFrequencies.length); // Match the filtered frequencies
-                    // //const filteredMagnitudesDB = filteredMagnitudes.map((mag) => 20 * Math.log10(mag));
-
-                    // // Plot the result
-                    // plotFFT(canvas, filteredFrequencies, filteredMagnitudes, canvas.watefall);
-
-                //     console.log("BYTE:", WASM.MEMORY[bytesPtr]);
-                //     // console.log(chunk.length)
-                //     // console.log(chunk.length, chunkBuffer.length)
-                //     // console.log(getPeakFrequency(chunk));
+                    // Ensure we are not listening to ourselves!!!
+                    if (currentlySendingMessage == null) {
+                        onChunkReceived(chunk);
+                    }
                 }
             }
 
-            // Do only update the canvas when we are visible and running!
-            if (FFTCanvas.paused == true || FFTCanvas.offsetParent == null) {
-                return;
-            }
-
-            plotWaveform(WaveformCanvas, inputBuffer);
-
-            const startPtr = WASM.MEMORY_STACK_START;
-            const realPtr = startPtr;
-            const imagPtr = realPtr + inputBuffer.length*4;
-            const bytesPtr = imagPtr + inputBuffer.length*4;
-
-            WASM.MEMORY_F32.set(inputBuffer, realPtr>>2);
-
-            // Make sure the imginary array is filled with zeros
-            WASM.MEMORY_F32.fill(0, imagPtr>>2, bytesPtr>>2);
-
-            WASM.EXPORTS.demodulate(
-                realPtr, imagPtr, inputBuffer.length, SAMPLE_CHUNK_SIZE, bytesPtr
-            );
-
-            // Retrieve the computed real and imaginary numbers from memory
-            const computedReal = new Float32Array(WASM.BUFFER, realPtr, SAMPLE_CHUNK_SIZE)
-            const computedImag = new Float32Array(WASM.BUFFER, imagPtr, SAMPLE_CHUNK_SIZE)
-
-            console.log("Computed Real:", computedReal);
-            console.log("Computed Imaginary:", computedImag);
-
-            const maxFreq = 5000; // Define the maximum frequency to display
-            const freqBinSize = SAMPLING_FREQUENCY / inputBuffer.length; // Frequency resolution
-
-            print(freqBinSize)
-
-            // Generate frequencies array and calculate magnitudes
-            const frequencies = Array.from({ length: SAMPLE_CHUNK_SIZE / 2 }, (_, i) => Math.round(i * freqBinSize));
-            const magnitudes = computedReal.map((r, i) => Math.sqrt(r * r + computedImag[i] * computedImag[i]));
-
-            // Filter frequencies and magnitudes for the desired range
-            const filteredFrequencies = frequencies.filter((freq) => freq <= maxFreq);
-            const filteredMagnitudes = magnitudes.slice(0, filteredFrequencies.length); // Match the filtered frequencies
-            //const filteredMagnitudesDB = filteredMagnitudes.map((mag) => 20 * Math.log10(mag));
-
-            // Plot the result
-            plotFFT(FFTCanvas, filteredFrequencies, filteredMagnitudes, FFTCanvas.watefall);
-
-            //console.log(getPeakFrequency(normalizedBuffer));
-
-            // if (res && res.length > 0) {
-            //     res = new TextDecoder("utf-8").decode(res);
-            //     rxData.value = res;
-            // }
+            window.dispatchEvent(new CustomEvent("audioprocess", {
+                "detail": {inputBuffer: inputBuffer}
+            }));
         }
 
         mediaStream.connect(recorder);
@@ -217,12 +227,20 @@ function sendNextMessage() {
         source.connect(audioContext.destination);
 
         // Start playback
+        source.startTime = audioContext.currentTime;
         source.start();
         currentlySendingMessage = nextMessage;
+
+        const intervalId = setInterval(() => {
+            const progress = (source.context.currentTime - source.startTime) / buffer.duration;
+            currentlySendingMessage.progressBar.value = progress * 100;
+        }, 50);
+
         source.onended = () => {
+            clearInterval(intervalId);
             currentlySendingMessage.dispatchEvent(new Event("sent"));
             currentlySendingMessage = null;
-            sendNextMessage(nextMessage);
+            sendNextMessage();
         };
     }
 }
@@ -231,8 +249,11 @@ function sendMessage(message) {
     messagesToSend.push(message)
     sendNextMessage();
 
+    message.progressBar.style.display = "block";
+    message.bubble.classList.add("sending");
     message.addEventListener("sent", () => {
         message.bubble.classList.remove("sending");
+        message.progressBar.style.display = "none";
     })
 }
 
@@ -294,7 +315,6 @@ function createUserMessage(author, alignment, content) {
 
     const bubble = document.createElement("div");
     bubble.classList.add("msg-bubble");
-    bubble.classList.add("sending");
     bubble.addEventListener("dblclick", (e) => {
         // Double clicking the text bubble will copy the message.
         navigator.clipboard.writeText(msg.content);
@@ -317,24 +337,48 @@ function createUserMessage(author, alignment, content) {
     text.classList.add("msg-text");
     text.textContent = content;
 
+    // TODO: Maybe rather a dialog for right click?
+    // const downloadButton = document.createElement("button");
+    // downloadButton.classList.add("message-button");
+    // downloadButton.classList.add("download-waveform-button");
+    // downloadButton.innerHTML = `<i class="fa-solid fa-file-waveform"></i>`;
+    // downloadButton.addEventListener("click", () => {
+    //     // TODO: Implement this properly.
+    //     const blob = new Blob([new Int16Array(msg.waveform).buffer], {type: "audio/wav"});
+    //     const url = URL.createObjectURL(blob);
+    //     const a = document.createElement("a");
+    //     a.href = url;
+    //     a.download = `AudioModem-${msg.date.toISOString()}.wav`;
+    //     a.click();
+    // });
+    // bubble.appendChild(downloadButton);
+
+    // const deleteButton = document.createElement("button");
+    // deleteButton.classList.add("message-button");
+    // deleteButton.classList.add("delete-button");
+    // deleteButton.innerHTML = `<i class="fa-solid fa-trash"></i>`;
+    // deleteButton.addEventListener("click", (e) => {
+    //     // Double clicking the text bubble will copy the message.
+    //     const confirm = window.confirm("Are you sure you want to delete this message?");
+    //     if (confirm) {
+    //         displayMessageAtBottom(null);
+    //         sendMessage(null);
+    //     }
+    // });
+    // bubble.appendChild(deleteButton);
+
+    // const copyButton = document.createElement("button");
+    // copyButton.classList.add("message-button");
+    // copyButton.classList.add("copy-button");
+    // copyButton.innerHTML = `<i class="fa-solid fa-clipboard"></i>`;
+    // copyButton.addEventListener("click", (e) => {
+    //     // Double clicking the text bubble will copy the message.
+    //     navigator.clipboard.writeText(msg.content);
+    // });
+    // bubble.appendChild(copyButton);
+
     msg.bubble = bubble;
     msg.content = content;
-    // TODO: So the javascript version is quite slow,
-    // the C version is much faster but still javascript's garbage
-    // collector is killing it.
-
-    // OLD WAY
-    // msg.waveform = modulateStringToWaveform(content, FSK);
-
-    const contentByteArray = textEndcoder.encode(content)
-    WASM.fillInputBuffer(contentByteArray);
-    //console.log(WASM.INPUT_BUFFER_PTR, contentByteArray.length, WASM.OUTPUT_BUFFER_PTR);
-    //const wf_length = WASM.ADMOD.modulate(WASM.INPUT_BUFFER_PTR, contentByteArray.length, WASM.OUTPUT_BUFFER_PTR);
-    //console.log("C-cko nam vratilo svoje pole!!! DLZKA VLNY:", wf_length);
-    msg.waveform = WASM.getOutputBuffer(WASM.EXPORTS.modulate(WASM.INPUT_BUFFER_PTR, contentByteArray.length, WASM.OUTPUT_BUFFER_PTR));
-    //console.log(new Float32Array(WASM.ADMOD.memory.buffer, 441000, 1));
-    // *4 because we need to account for the float size. One pointer every 4 bytes.
-    //console.log(new Float32Array(WASM.ADMOD.memory.buffer, 4096 + 441000 * 4, 1));
 
     bubble.text = text
     bubble.append(info, text);
@@ -343,9 +387,11 @@ function createUserMessage(author, alignment, content) {
     return msg;
 }
 
+// The name should be safe to use in innerHTML
 function getUsername() {
     const usernameConfigInput = document.getElementById("username-config-input");
-    return usernameConfigInput.value || localStorage.getItem("username");
+    const username = usernameConfigInput.value || localStorage.getItem("username");
+    return username.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function createSelfMessage(text, image=null) {
@@ -355,6 +401,32 @@ function createSelfMessage(text, image=null) {
     if (image != null) {
         addImageToMessage(message, image);
     }
+
+    // TODO: So the javascript version is quite slow,
+    // the C version is much faster but still javascript's garbage
+    // collector is killing it.
+
+    // OLD WAY
+    // msg.waveform = modulateStringToWaveform(content, FSK);
+
+    const progressBar = document.createElement("progress");
+    progressBar.value = 0;
+    progressBar.max = 100;
+    progressBar.style.display = "none";
+    message.progressBar = progressBar;
+    message.bubble.appendChild(progressBar)
+
+    const textByteArray = textEndcoder.encode(text)
+    WASM.fillInputBuffer(textByteArray);
+    //console.log(WASM.INPUT_BUFFER_PTR, contentByteArray.length, WASM.OUTPUT_BUFFER_PTR);
+    //const wf_length = WASM.ADMOD.modulate(WASM.INPUT_BUFFER_PTR, contentByteArray.length, WASM.OUTPUT_BUFFER_PTR);
+    //console.log("C-cko nam vratilo svoje pole!!! DLZKA VLNY:", wf_length);
+    message.waveform = WASM.getOutputBuffer(WASM.EXPORTS.modulate(
+        WASM.INPUT_BUFFER_PTR, textByteArray.length, WASM.OUTPUT_BUFFER_PTR
+    ));
+    //console.log(new Float32Array(WASM.ADMOD.memory.buffer, 441000, 1));
+    // *4 because we need to account for the float size. One pointer every 4 bytes.
+    //console.log(new Float32Array(WASM.ADMOD.memory.buffer, 4096 + 441000 * 4, 1));
 
     return message;
 }
@@ -400,6 +472,11 @@ function displayMessageAtBottom(msg) {
 
     messageArea.appendChild(msg);
     scrollToBottom();
+
+    // A new message was received but
+    if (messageArea.offsetParent === null) {
+        document.getElementById('chat-button').classList.add('new-message');
+    }
 }
 
 
@@ -464,17 +541,18 @@ sendButton.addEventListener('click', () => {
 
 function systemMessage(text, type, icon=null) {
     const msg = createMessageBase();
-    const content = document.createElement("span");
-    msg.className = "system-message system-message-" + type || "info";
-    content.textContent = text;
+    msg.className = "system-message system-message-" + type;
+    msg.style.color = CONST.SYSTEM_MESSAGE_COLORS[type];
 
     const iconElement = document.createElement("i");
     iconElement.className = icon || CONST.SYSTEM_MESSAGE_ICONS[type];
-    content.insertBefore(iconElement, content.firstChild);
+    msg.appendChild(iconElement)
 
-    content.style.color = CONST.SYSTEM_MESSAGE_COLORS[type];
-
+    const content = document.createElement("span");
+    // Using innerHTML here since
+    content.innerHTML = text;
     msg.appendChild(content);
+
     return msg;
 }
 
@@ -534,12 +612,21 @@ window.addEventListener("user-logged", () => {
     userLoggedIn = true;
     if (!window.matchMedia("(max-width: 512px)").matches) {
         inputBar.focus(); // Default focus
-    }
-    displayMessageAtBottom(systemMessage("Vitaj " + getUsername() + "! Svoju prezývku si môžeš kedykoľvek zmeniť v nastaveniach.", "welcome"));
+    };
+
+    const configButtonIcon = document.getElementById("config-button").getElementsByTagName("i")[0]
+    const configButtonRef = "<div id='config-button-ref' onclick='document.getElementById(\"config-button\").click()'>" + configButtonIcon.outerHTML + "</div>";
+    const welcomeMessage = systemMessage("Vitaj <span id='username-text'>" + getUsername() + "</span>! Svoju prezývku si môžeš kedykoľvek zmeniť v nastaveniach" + configButtonRef, "welcome");
+    displayMessageAtBottom(welcomeMessage);
     initStateUpdate();
 });
 
 window.addEventListener("wasm-library-loaded", () => {
     wasmLoaded = true;
     initStateUpdate();
+});
+
+window.addEventListener("wasm-library-failed", () => {
+    wasmLoaded = false;
+    displayMessageAtBottom(systemMessage("Načítavanie externých knižníc zlyhalo. Pokúste sa reštartovať stránku, alebo ak chyba pretrváva, kontaktujte správcu.", "error"));
 });

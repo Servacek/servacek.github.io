@@ -99,6 +99,10 @@ body {
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* IE10+/Edge */
     user-select: none; /* Standard */
+
+    /* Make sure the header is over everything */
+    position: sticky;
+    top: 0;
 }
 
 #header-title {
@@ -118,7 +122,7 @@ body {
 }
 
 .header button:hover {
-    color: var(--msger-header-hover-colour);
+    color: var(--msger-header-colour-hover);
     cursor: pointer;
     margin-left: 10px;
 }
@@ -164,17 +168,25 @@ body {
     display: flex;
     flex: 1 1 auto; /* Fills remaining space */
     flex-direction: column; /* Stack tabs vertically */
+    overflow: hidden; /* Prevent the .tab widget from overflowing */
 }
 
 .tab-button.selected {
-    color: var(--msger-header-hover-colour);
+    color: var(--msger-header-colour-hover);
 }
 
 .tab {
-    flex: 1 1 auto; /* Each tab stretches to fill the container */
+    flex: 1 1 auto;
     display: flex; /* Optional: Makes content alignment easier */
     flex-direction: column;
     visibility: hidden;
+    overflow: hidden; /* Prevent the .tab widget from overflowing */
+}
+
+.tab .tab-header-title {
+    font-weight: bold;
+    font-size: 1.5em;
+    margin: 20px;
 }
 
 /********************************/

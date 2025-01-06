@@ -7,7 +7,19 @@
 
 
 // This cannot be outside since it would be blocked by CORS
-export const LIBRARY_PATH = "libs/audio_modem.wasm";
+const LIBRARY_PATH = "libs/audio_modem.wasm";
+
+const WASM_TYPE = {
+    i32: "i32",
+    f32: "f32",
+    f64: "f64",
+}
+
+const MAP_TYPE_TO_GETTER = {
+    "i32": (dataView, offset) => dataView.getInt32(offset, true),
+    "f32": (dataView, offset) => dataView.getFloat32(offset, true),
+    "f64": (dataView, offset) => dataView.getFloat64(offset, true),
+};
 
 // MEMORY:
 // - Max message length is 512 characters, each one of them can have 4 bytes
@@ -52,8 +64,13 @@ async function _init() {
 
     // Use instatiateStreaming instead of instantiate because it is more efficient
     // since it doesn't require converting the WASM module to ByteArray.
+    const response = await fetch(LIBRARY_PATH);
+    // const wasmBuffer = await response.arrayBuffer();
+    // const module = await WebAssembly.compile(wasmBuffer);
+    // const exports = WebAssembly.Module.exports(module);
+    // print(exports);
     const {instance} = await WebAssembly.instantiateStreaming(
-        fetch(LIBRARY_PATH),
+        response,
         { env: {
                 _emscripten_memcpy_js: (dest, src, num) => MEMORY.copyWithin(dest, src, src + num),
             },
@@ -79,8 +96,6 @@ async function _init() {
         } // Pass the memory object to the module
     );
 
-    console.log("WASM MODULE LOADED", instance)
-
     EXPORTS = instance.exports;
     EXPORTS.recalc_conf() // Recalculate the configurations
 
@@ -93,16 +108,21 @@ async function _init() {
     INPUT_BUFFER_PTR = MEMORY_STACK_START + 4096;
     OUTPUT_BUFFER_PTR = INPUT_BUFFER_PTR + 1024;
 
+    // TODO:
     // WARNING: WASM is little-endian by default.
     const MEMORY_VIEW = new DataView(EXPORTS.memory.buffer);
-    print(MEMORY_VIEW.getUint8());
+    // print(MAP_TYPE_TO_GETTER["i8"](MEMORY_VIEW, INPUT_BUFFER_PTR));
 
+    let globalsCount = 0;
     // We need to know the size of the config so we can retrive it from the memory.
     for (const [name, exported] of Object.entries(EXPORTS)) {
         if (exported instanceof WebAssembly.Global) {
             CONFIG[name] = exported.value;
+            globalsCount += 1;
         }
     }
+
+    //console.log(globalsCount);
 
     // console.log(instance)
     // console.log(EXPORTS)
@@ -120,6 +140,10 @@ async function _init() {
 
 _init().then(() => {
     LOADED = true;
-
+    console.info("Successfully initialized WASM!");
     window.dispatchEvent(new CustomEvent("wasm-library-loaded"));
+}).catch((error) => {
+    LOADED = false;
+    console.error("Failed to initialize WASM:", error);
+    window.dispatchEvent(new CustomEvent("wasm-library-failed"));
 });

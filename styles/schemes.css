@@ -26,6 +26,7 @@
     --msg-img-bg: #ddd;
     --msger-input-placeholder-fg: #838384;
     --msger-send-button-disabled-bg: grey;
+    --username-color: #0b0b0b;
 
     --mobile-width: 600px;
 }
@@ -42,12 +43,12 @@
     --right-msg-fg: #fff;
     --msger-header-bg: rgba(63, 62, 62, 0.2);
     --msger-header-colour: #a6a7a7;
-    --msger-header-hover-colour: #ffffff;
+    --msger-header-colour-hover: #ffffff;
     --msger-scrollbar-track: #0000007b;
     --msger-scrollbar-thumb: #0b0b0b;
     --msger-chat-bg: transparent;
     /* --inputbar-area: rgb(85, 85, 86, 0); */
-    --inputbar-area: rgb(105, 105, 106, 0.2);
+    --inputbar-area: rgba(105, 105, 106, 0.037);
     --msger-send-button-bg: rgb(88, 128, 101);
     --msger-send-button-fg: #fff;
     --msger-send-button-hover-bg: rgb(107, 141, 118);
@@ -57,4 +58,5 @@
     --input-bar-fg: #fff;
     --msger-input-placeholder-fg: #838384;
     --msg-img-bg: #ddd;
+    --username-color: #ddd;
 }

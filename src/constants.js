@@ -17,15 +17,22 @@ export const SYSTEM_MESSAGE_ICONS = {
 };
 
 export const SYSTEM_MESSAGE_COLORS = {
-    ["info"]: "cyan",
-    ["warn"]: "yellow",
-    ["error"]: "red",
-    ["welcome"]: "green"
+    ["info"]: "#45a2ff", // light blue
+    ["warn"]: "#ffc107", // yellow orange
+    ["error"]: "#ff6e6e", // light red
+    ["welcome"]: "#8bc34a" // light green
 };
 
 export const DEBUG_MODE = true;
 
 export const TWOPI = 2 * Math.PI;
+
+export const CBYTE = {
+    NDA: 0, // No data avaiable
+    DXA: 1, // Data available
+    SXT: 2, // Start transmission
+    EXT: 3, // End transmission
+}
 
 // The maximal number of empty chunks received before timing out the connection.
 export const MAX_EMPTY_CONSECUTIVE_CHUNKS = 10;
