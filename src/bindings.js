@@ -48,7 +48,7 @@ export function getOutputBuffer(length) {
     // console.log("AVAILABLE MEMORY", EXPORTS.memory.buffer.byteLength);
     // console.log("BYTES NEEDED", OUTPUT_BUFFER_PTR + length*4);
     // console.log("MAX FLOATS IN OUTPUT", EXPORTS.memory.buffer.byteLength / 4)
-    return new Float32Array(EXPORTS.memory.buffer, OUTPUT_BUFFER_PTR, length);
+    return Array.from(new Float32Array(EXPORTS.memory.buffer, OUTPUT_BUFFER_PTR, length));
 }
 
 ////////////////////////////////////

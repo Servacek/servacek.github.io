@@ -78,22 +78,24 @@
                     <textarea id="input-bar" class="message-input" placeholder="Zadajte správu..." rows="1"></textarea>
 
                     <div id="right-input-toolbar">
-                        <button id="send-message-button" type="button">Odoslať</button>
-                        <button id="send-message-button-with-icon" type="button"><i class="fas fa-paper-plane"></i></button>
+                        <button id="send-message-button" type="button" disabled>Odoslať</button>
+                        <button id="send-message-button-with-icon" type="button" disabled><i class="fas fa-paper-plane"></i></button>
                     </div>
                 </form>
             </div>
 
             <div id="tab-config" class="tab">
-                <header class="config-header">
-                    <h2><div class="config-header-title"><b>Nastavenia</b></div></h2>
+                <header class="tab-header">
+                    <div class="tab-header-title">Nastavenia</div>
                 </header>
 
                 <label class="config-option">
                     <span>Používateľské meno</span>
                     <input id="username-config-input" type="text" value="Anonymný" maxlength="16">
-                    <input id="remember-me-config" type="checkbox">
-                    <label for="remember-me-config">Zapamätať si ma</label>
+                    <div style="white-space: nowrap;">
+                        <input id="remember-me-config" type="checkbox">
+                        <label for="remember-me-config">Zapamätať si ma</label>
+                    </div>
                 </label>
 
                 <!-- <div class="config-option">
@@ -155,28 +157,39 @@
             </div>
 
             <div id="tab-oscillator" class="tab">
-                <label class="config-option">
-                    <span>Frekvencia [Hz]</span>
-                    <input id="frequency-slider" class="oscillator-slider" type="range" min="1" max="20000" step="1" value="440">
-                    <span id="frequency-slider-display">440</span> Hz
-                </label>
+                <header class="tab-header">
+                    <div class="tab-header-title">Oscilátor</div>
+                </header>
 
-                <label class="config-option">
-                    <span>Amplitúda [%]</span>
-                    <input id="amplitude-slider" class="oscillator-slider" type="range" min="1" max="100" step="1" value="25">
-                    <span id="amplitude-slider-display">25</span> %
-                </label>
+                <div class="oscillator-controls">
+                    <label class="config-option">
+                        <span>Frekvencia [Hz]</span><br>
+                        <input id="frequency-slider" class="oscillator-slider" type="range" min="1" max="20000" step="1" value="440">
+                        <br><span id="frequency-slider-display">440</span> Hz
+                    </label>
 
-                <label class="config-option">
-                    <span>Fáza [°]</span>
-                    <input id="phase-slider" class="oscillator-slider" type="range" min="0" max="360" step="1" value="0">
-                    <span id="phase-slider-display">0</span> °
-                </label>
+                    <label class="config-option">
+                        <span>Amplitúda [%]</span><br>
+                        <input id="amplitude-slider" class="oscillator-slider" type="range" min="1" max="100" step="1" value="25">
+                        <br><span id="amplitude-slider-display">25</span> %
+                    </label>
 
-                <button id="play-oscillator-button">Prehrať</button>
+                    <label class="config-option">
+                        <span>Fáza [°]</span><br>
+                        <input id="phase-slider" class="oscillator-slider" type="range" min="0" max="360" step="1" value="0">
+                        <br><span id="phase-slider-display">0</span> °
+                    </label>
+                </div>
 
-                <canvas id="oscillator-waveform" width="500" height="500"
-                    style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-height: 60vh; max-width: 60vw;"></canvas>
+                <div id="oscillator-waveform-graph">
+                    <canvas id="oscillator-waveform"></canvas>
+                </div>
+
+                <div class="play-button">
+                    <button id="play-oscillator-button" type="button" title="Prehrať">
+                        <i class="fas fa-play-circle"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </section>
@@ -190,7 +203,7 @@
                     <input id="image-label" class="message-input" type="text" placeholder="Zadajte popis obrázka...">
                 </div>
                 <div id="submit-field" class="field">
-                    <button id="send-image-button">Odoslať</button>
+                    <button id="send-image-button" disabled>Odoslať</button>
                 </div>
             </div>
         </div>
@@ -200,7 +213,7 @@
     <div id="login-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <img src="assets/favicon.ico" alt="Holub Icon">
+                <img src="assets/pigeon.png" alt="Holub Icon" width="72px", height="72px">
                 <div class="modal-header-title">Holub™</div>
             </div>
 
@@ -210,7 +223,7 @@
                         PREZÝVKA
                     </div>
                     <div class="field-input">
-                        <input id="username-input" type="text" class="username-input" placeholder="Ako ťa máme volať?">
+                        <input id="username-input" type="text" class="username-input" placeholder="Ako ťa máme volať?" autocomplete="off">
                     </div>
                 </div>
 
@@ -234,8 +247,8 @@
 <script type="module" src="src/handlers.js"></script>
 <script>
     // Make the dark-theme the default one
-    document.documentElement.classList.add('dark-scheme');
-    document.getElementById("theme-toggle-button").dispatchEvent(new Event('click'));
+    // document.documentElement.classList.add('dark-scheme');
+    // document.getElementById("theme-toggle-button").dispatchEvent(new Event('click'));
 </script>
 
 </html>

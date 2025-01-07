@@ -28,11 +28,12 @@
 
 #waveform-graph {
     display: flex;
+    flex: 1 1 auto;
     overflow: hidden;
     max-height: 100%;
     max-width: 100%;
 }
 
 #fft-graph {
-    display: block;
+    height: 100%;
 }

@@ -104,10 +104,22 @@ for (const messageInput of document.getElementsByClassName("message-input")) {
 
 // THEME TOGGLE BUTTON
 
-document.getElementById("theme-toggle-button").addEventListener("click", () => {
-    const darkMode = document.documentElement.classList.toggle('dark-scheme');
-    document.getElementById("theme-toggle-button").innerHTML = darkMode
-        	? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+const themeToggleButton = document.getElementById("theme-toggle-button");
+
+function onThemeChanged(darkMode) {
+    //localStorage.setItem("theme", darkMode ? "dark-scheme" : "light-scheme");
+    refreshLocalStorageData();
+    themeToggleButton.innerHTML = darkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem("theme") || "dark-scheme";
+    document.documentElement.classList.add(savedTheme);
+    onThemeChanged(savedTheme == 'dark-scheme');
+
+    themeToggleButton.addEventListener("click", () => {
+        onThemeChanged(document.documentElement.classList.toggle('dark-scheme'));
+    });
 });
 
 // LOGIN MODAL
@@ -118,6 +130,7 @@ function canUseLocalStorage() {
 
 function refreshLocalStorageData() {
     if (canUseLocalStorage()) {
+        localStorage.setItem("theme", document.documentElement.classList.contains("dark-scheme") ? "dark-scheme" : "light-scheme");
         localStorage.setItem("username", usernameConfigInput.value);
         if (currentTab != null) {
             localStorage.setItem("current-tab", currentTab.id);
@@ -134,9 +147,7 @@ loginRememberMeConfig.addEventListener("change", () => {
 });
 
 usernameConfigInput.addEventListener("input", () => {
-    if (canUseLocalStorage()) {
-        localStorage.setItem('username', usernameConfigInput.value);
-    }
+    refreshLocalStorageData();
 })
 
 usernameModalInput.addEventListener("input", () => {
@@ -151,9 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loginButton.addEventListener('click', () => {
             const usernameInput = document.getElementById('username-input').value;
             if (usernameInput) {
-                if (loginRememberMe.checked) {
-                    localStorage.setItem('username', usernameInput);
-                }
+                refreshLocalStorageData();
 
                 usernameConfigInput.value = usernameInput;
                 loginRememberMeConfig.checked = loginRememberMe.checked;

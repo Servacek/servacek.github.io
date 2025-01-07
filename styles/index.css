@@ -86,7 +86,9 @@ body {
     display: flex;
     flex: 0 0 auto; /* Header size won't shrink or grow */
     justify-content: space-between;
-    padding: 12px;
+    padding: 14px;
+    padding-left: 16px;
+    padding-right: 16px;
     font-size: 16pt;
     /* border-bottom: var(--border); */
     border-radius: 5px 5px 0px 0px;
@@ -118,12 +120,14 @@ body {
     cursor: pointer;
     font-size: 16pt;
     background: none;
-    margin-left: 10px;
 }
 
 .header button:hover {
     color: var(--msger-header-colour-hover);
     cursor: pointer;
+}
+
+.header #tab-buttons button {
     margin-left: 10px;
 }
 
@@ -148,8 +152,6 @@ body {
     content: '';
     flex: 1;
     border-bottom: 1px solid #5d5d5d75;
-    margin-left: 10px;
-    margin-right: 10px;
 }
 
 .separator:not(:empty)::before {
@@ -181,12 +183,13 @@ body {
     flex-direction: column;
     visibility: hidden;
     overflow: hidden; /* Prevent the .tab widget from overflowing */
+    margin: 20px;
 }
 
 .tab .tab-header-title {
     font-weight: bold;
     font-size: 1.5em;
-    margin: 20px;
+    margin-bottom: 20px;
 }
 
 /********************************/
@@ -317,10 +320,16 @@ body {
         margin: 0px;
         border-radius: 0px;
         height: 100svh;
+        background-color: transparent;
     }
 
     html {
         min-height: fit-content;
+    }
+
+    body, #app {
+        /* Hide the BG image since it makes too much noise on small screens */
+        background-image: none !important;
     }
 
     .modal-content {

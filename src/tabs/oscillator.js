@@ -51,6 +51,7 @@ function onWaveformParamsChanged() {
     const period = 1 / f;
     const samples = SAMPLING_RATE//Math.ceil(SAMPLING_RATE * period);
 
+    print("CALCULATING A NEW WAVEFORM");
     WASM.EXPORTS.waveform(f, a, p, samples, WASM.OUTPUT_BUFFER_PTR);
     const new_waveform = WASM.getOutputBuffer(samples);
     waveform = new_waveform;
@@ -68,20 +69,27 @@ for (const slider of document.getElementsByClassName("oscillator-slider")) {
     })
 }
 
+function onPlayingStateChanged(playing) {
+    playButton.icon.className = playing ? "fas fa-pause-circle" : "fas fa-play-circle";
+}
 
-const playButton = document.getElementById("play-oscillator-button")
+const playButton = document.getElementById("play-oscillator-button");
+playButton.icon = playButton.getElementsByTagName("i")[0];
 playButton.addEventListener("click", () => {
     if (!waveform) {
+        onPlayingStateChanged(false);
         return;
     }
 
     if (bufferSource) {
+        onPlayingStateChanged(false);
         bufferSource.stop();
         bufferSource.disconnect();
         bufferSource = null;
         return;
     }
 
+    onPlayingStateChanged(true);
     onWaveformUpdated();
 })
 

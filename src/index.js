@@ -80,6 +80,12 @@ function onChunkReceived(chunk) {
             console.log("Transmission ended!");
             rxRecording = false;
 
+            if (bitsReceivedStr.trim().length == 0) {
+                console.log("NO BITS RECEIVED");
+                bitsReceivedStr = "";
+                return;
+            }
+
 
             print(bitsReceivedStr);
             // Convert the bits received string to an actual string
@@ -89,8 +95,8 @@ function onChunkReceived(chunk) {
             console.log("Received String:", receivedString);
             bitsReceivedStr = "";
 
-            if (receivedString) {
-                displayMessageAtBottom(createUserMessage("SOMEONE", CONST.ALIGMENT_LEFT, receivedString))
+            if (receivedString && receivedString.trim().length > 0) {
+                displayMessageAtBottom(createUserMessage("SOMEONE", CONST.ALIGMENT_LEFT, receivedString.trim()))
             }
 
 
@@ -141,24 +147,41 @@ function onChunkReceived(chunk) {
 }
 
 async function tryStartRecording() {
+    // TODO:?
+    if (!navigator.mediaDevices) {
+        // There are no mediaDevices, PANIC!!
+        displayMessageAtBottom(systemMessage("Žiadne zvukové médium na príjem správ nebolo nájdené! Správy nebudú príjimané.", "warn"));
+        return;
+    }
+
     navigator.mediaDevices.getUserMedia({
         audio: {
             // TODO: Try these out?
-            echoCancellation: false,
-            autoGainControl: false,
-            noiseSuppression: false,
+            echoCancellation: { ideal: true },
+            autoGainControl: { ideal: false },
+            noiseSuppression:{ ideal: true },
         },
         video: false,
     }).then(function(stream) {
-        const context = new AudioContext();
-        const mediaStream = context.createMediaStreamSource(stream);
+        const context = new AudioContext({
+            latencyHint: "balanced",
+            sampleRate: 48000,
+        });
+        const mediaStreamSource = context.createMediaStreamSource(stream);
+        // const mediaRecorder = new MediaRecorder(stream, {
+        //     //mimeType: "audio",
+        // })
+
+        // mediaRecorder.setAudioSamplingRate(48000);
+        // console.log(mediaRecorder.getAudioSamplingRate());
 
         // https://ciiec.buap.mx/FFT.js/
         // rounded to nearest power of 2
-        const bufferSize = 2048;//Math.pow(2, Math.floor(Math.log2(SAMPLE_CHUNK_SIZE)));
-        var recorder = context.createScriptProcessor
-            ? context.createScriptProcessor(bufferSize, CONST.INPUT_CHANNELS, CONST.OUTPUT_CHANNELS)
-            : context.createJavaScriptNode(bufferSize, CONST.INPUT_CHANNELS, CONST.OUTPUT_CHANNELS);
+
+        // Let the system decide which bufferSize is the best for us,
+        // since we are using our own buffer anyways.
+        const bufferSize = 0//2048;//Math.pow(2, Math.floor(Math.log2(SAMPLE_CHUNK_SIZE)));
+        var recorder = context.createScriptProcessor(bufferSize, CONST.INPUT_CHANNELS, CONST.OUTPUT_CHANNELS)
 
         let chunkBuffer = []; // Has to be mutable because we are overriding it.
         recorder.onaudioprocess = function (e) {
@@ -189,7 +212,7 @@ async function tryStartRecording() {
             }));
         }
 
-        mediaStream.connect(recorder);
+        mediaStreamSource.connect(recorder);
         recorder.connect(context.destination);
     }).catch(function (e) { // This should handle even the revokes and everything.
         // TODO: Handle not being allowed to record audio.
@@ -197,7 +220,11 @@ async function tryStartRecording() {
         // console.error("WE CANNOT RECORD AUDIO, WHAT CAN WE DO???!!");
         // console.error("IMPLEMENT WRITE ONLY MODE FOR ONE DIRECTIONAL COMMUNICATION!!!");
 
-        displayMessageAtBottom(systemMessage("Chýba oprávnenia na používanie mikrofónu, bez tohto oprávnenia nebudete môcť príjimať správy!", "warn"));
+        if (e.name === "NotAllowedError" || e.name === "SecurityError") {
+            displayMessageAtBottom(systemMessage("Chýba oprávnenia na používanie mikrofónu, bez tohto oprávnenia nebudete môcť príjimať správy!", "warn"));
+        } else {
+            displayMessageAtBottom(systemMessage("Chyba pri nahrávaní: " + e.message, "error"))
+        }
     });
 }
 
@@ -257,15 +284,20 @@ function sendMessage(message) {
     })
 }
 
+// TODO: This is temporary until we decide on the design.
+const sendMessageButtonWithIcon = document.getElementById("send-message-button-with-icon");
+
 inputBar.oninput = function() {
     //this.style.height = 'auto'; // Reset height to calculate scrollHeight
     //this.style.height = `${Math.min(this.scrollHeight, 200)}px`; // Adjust 200 to match max-height
 
     sendMessageButton.disabled = !this.value.trim();
+    sendMessageButtonWithIcon.disabled = sendMessageButton.disabled;
 }
 
 // Handle submit button being pressed
 sendMessageButton.addEventListener("click", () => inputArea.submit());
+sendMessageButtonWithIcon.addEventListener("click", () => sendMessageButton.click());
 
 // Handle enter key, when SHIFT is pressed do not send the message.
 inputArea.addEventListener("keydown", event => {
@@ -304,6 +336,7 @@ function clearInputBar() {
 function createMessageBase() {
     const date = new Date();
     const msg = document.createElement("div");
+    msg.classList.add("message");
     msg.date = date;
 
     return msg;
@@ -541,7 +574,7 @@ sendButton.addEventListener('click', () => {
 
 function systemMessage(text, type, icon=null) {
     const msg = createMessageBase();
-    msg.className = "system-message system-message-" + type;
+    msg.classList.add("system-message", "system-message-" + type);
     msg.style.color = CONST.SYSTEM_MESSAGE_COLORS[type];
 
     const iconElement = document.createElement("i");
@@ -585,7 +618,7 @@ attachmentInput.addEventListener('change', (event) => {
         };
         reader.readAsDataURL(file);
     } else {
-        alert('Please select a valid image file.');
+        alert('Zadaný formát súbor zatiaľ nie je podporovaný.');
     }
 });
 
@@ -597,7 +630,15 @@ imageModal.addEventListener("keydown", (event) => {
     }
 });
 
-/// AFTER LOGIN
+//////// SETUP
+
+if (!navigator.mediaDevices) {
+    // There are no mediaDevices, PANIC!!
+    alert("Neboli detekované žiadne mediálne zariadenia potrebné pre príjimanie a odosielanie údajov alebo pre funkčnosť oscilátora. Možno pomôže opätovne načítať stránku.");
+    if (confirm("Načítať stránku znova?")) {
+        location.reload();
+    }
+}
 
 let userLoggedIn = false;
 let wasmLoaded = false;
