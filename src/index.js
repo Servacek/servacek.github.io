@@ -157,9 +157,9 @@ async function tryStartRecording() {
     navigator.mediaDevices.getUserMedia({
         audio: {
             // TODO: Try these out?
-            echoCancellation: { ideal: true },
+            echoCancellation: { ideal: false },
             autoGainControl: { ideal: false },
-            noiseSuppression:{ ideal: true },
+            noiseSuppression:{ ideal: false },
         },
         video: false,
     }).then(function(stream) {
