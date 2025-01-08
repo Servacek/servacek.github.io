@@ -39,34 +39,39 @@ function onWaveformUpdated() {
     bufferSource.start();
 }
 
-function onWaveformParamsChanged() {
-    // const new_waveform = new Float32Array(samples);
-    // for (let i = 0; i < samples; i++) {
-    //     new_waveform[i] = a * Math.sin(2 * Math.PI * f * i / samples + p);
-    // }
-    f = frequencySlider.value;
-    a = amplitudeSlider.value / 100;
-    p = phaseSlider.value * Math.PI / 180;
+function onWaveformParamsChanged(frequency, amplitude, phase) {
+    f = frequency === null ? f : frequency;
+    a = amplitude === null ? a : amplitude;
+    p = phase === null ? p : phase;
 
     const period = 1 / f;
-    const samples = SAMPLING_RATE//Math.ceil(SAMPLING_RATE * period);
+    const samples = SAMPLING_RATE;
+    const additionalSamples = 100;
 
-    print("CALCULATING A NEW WAVEFORM");
     WASM.EXPORTS.waveform(f, a, p, samples, WASM.OUTPUT_BUFFER_PTR);
     const new_waveform = WASM.getOutputBuffer(samples);
+    // const new_waveform = new Float32Array(samples);
+    // for (let i = 0; i < new_waveform.length; i++) {
+    //     new_waveform[i] = a * Math.sin(2 * Math.PI * f * i / SAMPLING_RATE + p);
+    // }
     waveform = new_waveform;
-    plotWaveform(oscillatorWaveform, new_waveform)
+    plotWaveform(oscillatorWaveform, new_waveform.slice(0, Math.round(period * SAMPLING_RATE) + additionalSamples), f)
 
     if (bufferSource) {
         onWaveformUpdated();
     }
 }
 
+function onSlidersUpdated() {
+    onWaveformParamsChanged(frequencySlider.value, amplitudeSlider.value / 100, phaseSlider.value * Math.PI / 180)
+}
+
 for (const slider of document.getElementsByClassName("oscillator-slider")) {
     const display = document.getElementById(slider.id + "-display");
     slider.addEventListener("input", () => {
         display.textContent = slider.value;
-        onWaveformParamsChanged()
+        display.value = slider.value;
+        onSlidersUpdated();
     })
     display.addEventListener("input", () => {
         const value = parseFloat(display.value);
@@ -75,7 +80,7 @@ for (const slider of document.getElementsByClassName("oscillator-slider")) {
             return;
         }
         slider.value = value;
-        onWaveformParamsChanged();
+        onSlidersUpdated();
     })
 }
 
@@ -105,12 +110,11 @@ playButton.addEventListener("click", () => {
 
 
 if (WASM.LOADED) {
-    onWaveformParamsChanged()
+    onSlidersUpdated()
 } else {
     window.addEventListener("wasm-library-loaded", () => {
         // Initialize
         // Make sure we have WASM available.
-        onWaveformParamsChanged()
+        onSlidersUpdated()
     })
-
 }

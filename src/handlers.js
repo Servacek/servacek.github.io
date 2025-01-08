@@ -125,6 +125,18 @@ themeToggleButton.addEventListener("click", () => {
 
 // });
 
+// CHECKBOX LABELS
+
+// Make clicking checkbox labels trigger the checkbox itself.
+for (const label of document.getElementsByTagName("label")) {
+    if (label.htmlFor != "") {
+        const checkbox = document.getElementById(label.htmlFor)
+        if (checkbox != null && checkbox.tagName == "INPUT" && checkbox.type == "checkbox") {
+            label.classList.add("unselectable");
+        }
+    }
+}
+
 // LOGIN MODAL
 
 function canUseLocalStorage() {
@@ -165,6 +177,7 @@ usernameModalInput.addEventListener("input", () => {
 document.addEventListener('DOMContentLoaded', () => {
     const savedUsername = localStorage.getItem('username');
     if (!savedUsername) {
+        localStorage.clear(); // We do not know this user, so forget everything else.
         loginModal.style.display = 'flex'; // Show the modal
         usernameModalInput.focus(); // Focus inside
         loginButton.addEventListener('click', () => {
@@ -187,7 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 loginModal.addEventListener('show', () => {
-    console.log('Login modal is displayed');
     usernameModalInput.focus();
 });
 

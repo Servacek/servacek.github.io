@@ -199,12 +199,19 @@ body::-webkit-scrollbar-thumb {
     visibility: hidden;
     overflow: hidden; /* Prevent the .tab widget from overflowing */
     margin: 20px;
+    margin-bottom: 0px;
 }
 
 .tab .tab-header-title {
     font-weight: bold;
     font-size: 1.5em;
     margin-bottom: 20px;
+}
+
+footer {
+    font-size: 6pt;
+    text-align: center;
+    opacity: 0.4;
 }
 
 /********************************/
@@ -331,6 +338,7 @@ body::-webkit-scrollbar-thumb {
 /********************************/
 
 @media (max-width: 600px) {
+
     #app {
         margin: 0px;
         border-radius: 0px;
@@ -349,6 +357,10 @@ body::-webkit-scrollbar-thumb {
 
     .modal-content {
         width: 300px;
+    }
+
+    .header {
+        border-radius: 0px;
     }
 
     #header-title {

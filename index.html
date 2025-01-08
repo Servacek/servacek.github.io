@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale = 1.0" />
 
     <!-- Cache -->
-    <meta http-equiv="Cache-control" content="public, max-age=604800">
+    <!-- <meta http-equiv="Cache-control" content="public, max-age=604800"> -->
 
     <!-- Debugging Stuff -->
     <script>
@@ -20,6 +20,20 @@
 
     <!-- Page Icon -->
     <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+
+    <script>
+        const MAKE_DARK_MODE_DEFAULT = true;
+        const DARK_MODE = "dark-scheme";
+
+        // Load the saved theme here so it is shown before the page is loaded.
+        const savedTheme = localStorage.getItem("theme");
+        document.themeLoaded = true;
+        if ((!savedTheme && MAKE_DARK_MODE_DEFAULT) || savedTheme == DARK_MODE) {
+            document.documentElement.classList.add(DARK_MODE);
+        } else {
+            document.documentElement.classList.remove(DARK_MODE);
+        }
+    </script>
 
     <!-- Styles -->
     <link rel="stylesheet" href="styles/fonts.css">
@@ -41,7 +55,7 @@
 <body>
     <section id="app">
         <header class="header">
-            <div id="header-title"><b>AudioModem</b> <small>v1.7</small></div>
+            <div id="header-title">AudioModem</div>
             <button id="theme-toggle-button" title="Vzhľad">
                 <i id="theme-toggle-button-icon" class="fas"></i>
             </button>
@@ -192,6 +206,9 @@
                 </div>
             </div>
         </div>
+
+        <!-- Footer (text is added upon library load.) -->
+        <footer class="unselectable">Preview v1.7<br>Powered by Tinnitus library v0.4</footer>
     </section>
 
     <!-- Image Upload Modal -->
@@ -230,7 +247,7 @@
                 <div id="remember-me-field" class="field">
                     <div class="field-input">
                         <input id="remember-me" type="checkbox" class="field-checkbox">
-                        <label for="remember-me">Zapamätať si ma</label>
+                        <label for="remember-me" class="unselectable">Zapamätať si ma</label>
                     </div>
                 </div>
 
@@ -245,18 +262,5 @@
 <script type="module" src="src/bindings.js"></script>
 <script type="module" src="src/index.js"></script>
 <script type="module" src="src/handlers.js"></script>
-<script>
-    const MAKE_DARK_MODE_DEFAULT = true;
-    const DARK_MODE = "dark-scheme";
-
-    // Load the saved theme here so it is shown before the page is loaded.
-    const savedTheme = localStorage.getItem("theme");
-    document.themeLoaded = true;
-    if ((!savedTheme && MAKE_DARK_MODE_DEFAULT) || savedTheme == DARK_MODE) {
-        document.documentElement.classList.add(DARK_MODE);
-    } else {
-        document.documentElement.classList.remove(DARK_MODE);
-    }
-</script>
 
 </html>

@@ -52,7 +52,7 @@
 //     });
 // }
 
-export function plotWaveform(canvas, waveform) {
+export function plotWaveform(canvas, waveform, frequency) {
     const ctx = canvas.getContext('2d');
 
     const width = canvas.width;
@@ -66,16 +66,19 @@ export function plotWaveform(canvas, waveform) {
     const sliceWidth = width / bufferLength;
 
     ctx.beginPath();
-    ctx.moveTo(0, centerY);
-
-    for (let i = 10; i < bufferLength; i++) {
+    for (let i = 0; i < bufferLength; i++) {
         const x = i * sliceWidth;
         const y = centerY + waveform[i] * centerY; // Normalize the data to fit within canvas height
-        ctx.lineTo(x, y);
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
     }
 
     ctx.lineWidth = 2;
-    ctx.strokeStyle = 'blue';
+    const color = frequency ? `hsl(${frequency / 100}, 100%, 50%)` : "blue"; // Calculate the color according to the frequency, the higher frequency the redish the color.
+    ctx.strokeStyle = color;
     ctx.stroke();
 }
 

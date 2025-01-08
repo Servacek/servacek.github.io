@@ -61,7 +61,18 @@ function onChunkReceived(chunk) {
         console.assert(WASM.MEMORY_F32[i] === 0, "Imaginary memory incorrectly filled at index", i);
     }
 
-    const lastBytePtr = WASM.EXPORTS.demodulate(startPtr, N, bytesPtr);
+    let lastBytePtr = null;
+
+    let secondByteBuffer = null;
+    lastBytePtr = WASM.EXPORTS.demodulate(startPtr + ((Math.floor(N/2) + (N % 2)) * 4), Math.floor(N/2) + (N % 2), bytesPtr);
+    secondByteBuffer = WASM.MEMORY.slice(bytesPtr, lastBytePtr+1);
+
+    let firstByteBuffer = null;
+    lastBytePtr = WASM.EXPORTS.demodulate(startPtr, Math.floor(N/2), bytesPtr);
+    firstByteBuffer = WASM.MEMORY.slice(bytesPtr, lastBytePtr+1);
+
+    print("first", firstByteBuffer)
+    print("second", secondByteBuffer)
 
     const controlByte = WASM.MEMORY[bytesPtr];
     if (controlByte == CONST.CBYTE.NDA) {
@@ -190,7 +201,7 @@ async function tryStartRecording() {
             const inputBuffer = e.inputBuffer.getChannelData(0);
 
 
-            const SAMPLE_CHUNK_SIZE = 8192;// WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
+            const SAMPLE_CHUNK_SIZE = 9600;// WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
             const BITS_PER_FRAME = WASM.MEMORY_U32[WASM.EXPORTS.BITS_PER_FRAME/4];
 
             if (chunkBuffer.length < SAMPLE_CHUNK_SIZE) {
@@ -449,6 +460,7 @@ function createSelfMessage(text, image=null) {
     message.progressBar = progressBar;
     message.bubble.appendChild(progressBar)
 
+    // TODO: Possible compression here?
     const textByteArray = textEndcoder.encode(text)
     WASM.fillInputBuffer(textByteArray);
     //console.log(WASM.INPUT_BUFFER_PTR, contentByteArray.length, WASM.OUTPUT_BUFFER_PTR);
@@ -559,7 +571,7 @@ sendButton.addEventListener('click', () => {
     container.appendChild(imgElement);
     container.appendChild(labelElement);
 
-    const message = createSelfMessage(message, imgElement);
+    const message = createSelfMessage(labelText, imgElement);
     displayMessageAtBottom(message);
     sendMessage(message);
 
@@ -571,6 +583,10 @@ sendButton.addEventListener('click', () => {
         clearInputBar();
     }, 0);
 });
+
+imageLabel.addEventListener('input', () => {
+    sendButton.disabled = !imageLabel.value.trim();
+})
 
 function systemMessage(text, type, icon=null) {
     const msg = createMessageBase();
