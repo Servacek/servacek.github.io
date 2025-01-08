@@ -6,6 +6,22 @@
 export const ALIGMENT_RIGHT = "right"
 export const ALIGMENT_LEFT  = "left";
 
+export const THEMES = {
+    LIGHT: {
+        index: 1,
+        name: "light-scheme",
+        icon: "fas fa-sun",
+    },
+    DARK: {
+        index: 2,
+        name: "dark-scheme",
+        icon: "fas fa-moon",
+    }
+}
+
+export const DARK_MODE = "dark-scheme";
+export const MAKE_DARK_MODE_DEFAULT = true;
+
 export const MAX_USERNAME_LENGTH = 16;
 export const MAX_MESSAGE_LENGTH = 128;
 

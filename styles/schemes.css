@@ -27,14 +27,16 @@
     --msger-input-placeholder-fg: #838384;
     --msger-send-button-disabled-bg: grey;
     --username-color: #0b0b0b;
+    --theme-button-icon: "\f186\00a0"; /* fa-moon */
 
     --mobile-width: 600px;
 }
 
-:root:root.dark-scheme {
+:root.dark-scheme {
     --body-bg: #0d0d0d;
     /* --body-bg: linear-gradient(135deg, #2d2d2d 0%, #6a6a6a 100%); */
     /* --msger-bg: #351F39; */
+    --theme-button-icon: "\f185\00a0"; /* fa-sun */
     --msger-bg: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), #38415f;
     --msger-bg-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url("../assets/dark-background.jpg");;
     --border: 1px solid #0000007b;

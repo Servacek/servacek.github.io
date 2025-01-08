@@ -5,7 +5,7 @@
     <!-- Encoding -->
     <meta charset="UTF-8">
     <!-- Allow user scalability to support image zooming -->
-    <meta name="viewport" content="width=device-width, initial-scale = 1.0, maximum-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale = 1.0" />
 
     <!-- Cache -->
     <meta http-equiv="Cache-control" content="public, max-age=604800">
@@ -43,7 +43,7 @@
         <header class="header">
             <div id="header-title"><b>AudioModem</b> <small>v1.7</small></div>
             <button id="theme-toggle-button" title="Vzhľad">
-                <i class="fas fa-sun"></i>
+                <i id="theme-toggle-button-icon" class="fas"></i>
             </button>
             <div id="tab-buttons">
                 <button id="chat-button" class="tab-button" title="Čet">
@@ -165,19 +165,19 @@
                     <label class="config-option">
                         <span>Frekvencia [Hz]</span><br>
                         <input id="frequency-slider" class="oscillator-slider" type="range" min="1" max="20000" step="1" value="440">
-                        <br><span id="frequency-slider-display">440</span> Hz
+                        <br><input id="frequency-slider-display" class="oscillator-slider-display" type="number" value="440" min="1" max="20000" step="1">
                     </label>
 
                     <label class="config-option">
                         <span>Amplitúda [%]</span><br>
                         <input id="amplitude-slider" class="oscillator-slider" type="range" min="1" max="100" step="1" value="25">
-                        <br><span id="amplitude-slider-display">25</span> %
+                        <br><input id="amplitude-slider-display" class="oscillator-slider-display" type="number" value="25" min="1" max="100" step="1">
                     </label>
 
                     <label class="config-option">
                         <span>Fáza [°]</span><br>
                         <input id="phase-slider" class="oscillator-slider" type="range" min="0" max="360" step="1" value="0">
-                        <br><span id="phase-slider-display">0</span> °
+                        <br><input id="phase-slider-display" class="oscillator-slider-display" type="number" value="0" min="0" max="360" step="1">
                     </label>
                 </div>
 
@@ -246,9 +246,17 @@
 <script type="module" src="src/index.js"></script>
 <script type="module" src="src/handlers.js"></script>
 <script>
-    // Make the dark-theme the default one
-    // document.documentElement.classList.add('dark-scheme');
-    // document.getElementById("theme-toggle-button").dispatchEvent(new Event('click'));
+    const MAKE_DARK_MODE_DEFAULT = true;
+    const DARK_MODE = "dark-scheme";
+
+    // Load the saved theme here so it is shown before the page is loaded.
+    const savedTheme = localStorage.getItem("theme");
+    document.themeLoaded = true;
+    if ((!savedTheme && MAKE_DARK_MODE_DEFAULT) || savedTheme == DARK_MODE) {
+        document.documentElement.classList.add(DARK_MODE);
+    } else {
+        document.documentElement.classList.remove(DARK_MODE);
+    }
 </script>
 
 </html>

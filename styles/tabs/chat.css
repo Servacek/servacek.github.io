@@ -4,6 +4,11 @@
 /********    CHAT TAB    ********/
 /********************************/
 
+#tab-chat {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
 #message-area {
     display: flex;
     flex-direction: column;
@@ -11,10 +16,8 @@
     flex: 1 1 auto;
     overflow-y: auto;
     /* padding: 10px; */
-}
-
-#message-area::-webkit-scrollbar {
-    width: 6px;
+    padding-right: 15px;
+    /* margin-right: px; */
 }
 
 .message {
@@ -30,9 +33,11 @@
 
 .user-msg:last-of-type {
     margin: 0;
+    margin-bottom: 20px;
 }
 
 .msg-bubble {
+    display: block;
     max-width: 100%;
     min-width: 0;
     overflow-wrap: break-word;
@@ -41,6 +46,8 @@
     background: var(--left-msg-bg);
     color: var(--right-msg-fg);
     word-break: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .msg-bubble img {
@@ -135,6 +142,7 @@
     /* Make sure the input-bar is over everything (like the header */
     position: sticky;
     top: 0;
+    margin-bottom: 20px;
 }
 
 #input-area * {
@@ -283,6 +291,7 @@
 
 .system-message #config-button-ref:hover {
     color: var(--msger-header-colour-hover);
+    cursor: pointer;
 }
 
 

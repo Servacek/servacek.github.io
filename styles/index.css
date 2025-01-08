@@ -5,7 +5,7 @@ html {
 
 html * {
     font-family: JetBrains Mono, 'Segoe UI', 'Open Sans', 'Helvetica Neue', sans-serif;
-    /* transition: all 0.23s; */
+    transition: all 0.23s, color 0.12s;
 }
 
 *,
@@ -22,9 +22,11 @@ body {
     align-items: center;
     height: 100svh;
     background-color: var(--body-bg);
-    background-image: var(--body-bg);
+    /* background-image: var(--body-bg); */
     position: relative;
     color: var(--msger-header-colour);
+
+    transition: all 0.23s;
 }
 
 #app {
@@ -49,21 +51,28 @@ body {
 /********   SCROLLBARS   ********/
 /********************************/
 
-::-webkit-scrollbar {
+body::-webkit-scrollbar {
     width: 6px;
     padding-right: 10px;
 }
 
-::-webkit-scrollbar-track {
+body::-webkit-scrollbar-track {
     background: var(--msger-scrollbar-track);
     margin-right: 10px;
     padding-right: 10px;
+    background: red;
 }
 
-::-webkit-scrollbar-thumb {
+body::-webkit-scrollbar-thumb {
     background: var(--msger-scrollbar-thumb);
     border-radius: 3px;
     padding-right: 10px;
+}
+
+/* Firefox */
+* {
+    scrollbar-width: auto;
+    scrollbar-color: var(--msger-scrollbar-thumb) var(--msger-scrollbar-track);
 }
 
 /********************************/
@@ -131,6 +140,10 @@ body {
     margin-left: 10px;
 }
 
+#theme-toggle-button i::before {
+    content: var(--theme-button-icon);
+}
+
 .unselectable {
     /* Prevent text selection */
     -webkit-user-select: none; /* Safari */
@@ -145,6 +158,8 @@ body {
     text-align: center;
     font-size: 14px;
     font-weight: bold;
+    margin-top: 20px;
+    margin-bottom: 10px;
 }
 
 .separator::before,

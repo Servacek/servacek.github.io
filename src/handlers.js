@@ -106,21 +106,24 @@ for (const messageInput of document.getElementsByClassName("message-input")) {
 
 const themeToggleButton = document.getElementById("theme-toggle-button");
 
-function onThemeChanged(darkMode) {
+function onThemeChanged(darkScheme) {
     //localStorage.setItem("theme", darkMode ? "dark-scheme" : "light-scheme");
     refreshLocalStorageData();
-    themeToggleButton.innerHTML = darkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    // themeToggleButton.innerHTML = darkScheme ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const savedTheme = localStorage.getItem("theme") || "dark-scheme";
-    document.documentElement.classList.add(savedTheme);
-    onThemeChanged(savedTheme == 'dark-scheme');
+// document.addEventListener('DOMContentLoaded', () => {
 
-    themeToggleButton.addEventListener("click", () => {
-        onThemeChanged(document.documentElement.classList.toggle('dark-scheme'));
-    });
+
+onThemeChanged(document.documentElement.classList.contains(CONSTS.DARK_MODE));
+themeToggleButton.addEventListener("click", () => {
+    document.documentElement.classList.toggle(CONSTS.DARK_MODE)
+    refreshLocalStorageData();
+    // onThemeChanged(document.documentElement.classList.toggle(CONSTS.DARK_MODE));
+    //themeToggleButton
 });
+
+// });
 
 // LOGIN MODAL
 
@@ -130,11 +133,16 @@ function canUseLocalStorage() {
 
 function refreshLocalStorageData() {
     if (canUseLocalStorage()) {
-        localStorage.setItem("theme", document.documentElement.classList.contains("dark-scheme") ? "dark-scheme" : "light-scheme");
+        if (document.themeLoaded == true) {
+            localStorage.setItem("theme", document.documentElement.classList.contains(CONSTS.DARK_MODE) ? CONSTS.DARK_MODE : "light-scheme");
+        }
+        // localStorage.setItem("theme", document.documentElement.classList.contains(CONSTS.DARK_MODE) ? CONSTS.DARK_MODE : "light-scheme");
         localStorage.setItem("username", usernameConfigInput.value);
         if (currentTab != null) {
             localStorage.setItem("current-tab", currentTab.id);
         }
+
+        print("SAVING: ", localStorage.getItem("theme"));
     }
 }
 

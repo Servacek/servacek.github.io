@@ -63,9 +63,19 @@ function onWaveformParamsChanged() {
 }
 
 for (const slider of document.getElementsByClassName("oscillator-slider")) {
+    const display = document.getElementById(slider.id + "-display");
     slider.addEventListener("input", () => {
-        document.getElementById(slider.id + "-display").textContent = slider.value;
+        display.textContent = slider.value;
         onWaveformParamsChanged()
+    })
+    display.addEventListener("input", () => {
+        const value = parseFloat(display.value);
+        if (value < slider.min || value > slider.max) {
+            display.value = slider.value;
+            return;
+        }
+        slider.value = value;
+        onWaveformParamsChanged();
     })
 }
 
