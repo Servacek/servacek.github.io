@@ -138,7 +138,7 @@ function onChunkReceived(chunk) {
             bitsReceivedStr = "";
 
             if (receivedString && receivedString.trim().length > 0) {
-                displayMessageAtBottom(createUserMessage("SOMEONE", CONST.ALIGMENT_LEFT, receivedString.trim()))
+                displayMessageAtBottom(createUserMessage("DROID", CONST.ALIGMENT_LEFT, receivedString.trim()))
             }
 
 
