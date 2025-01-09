@@ -29,13 +29,15 @@ const textEndcoder = new TextEncoder("utf-8");
 let rxRecording = false; // DEBUGGING
 // let receivedBytes = new Uint8Array(512);
 let bitsReceivedStr = "";
+let prevByte = null;
+let choosing = "left";
+let noDataCounter = 0;
 // let currentByte = -1;
 // let currentBit = 0;
 
 function onChunkReceived(chunk) {
     // TODO: Replace this with a dedicated CONFIG object.
-    // const SAMPLING_FREQUENCY = WASM.MEMORY_U32[WASM.EXPORTS.SAMPLING_FREQUENCY/4];
-    // const SAMPLE_CHUNK_SIZE = WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
+    const BITS_PER_FRAME = WASM.MEMORY[WASM.EXPORTS.BITS_PER_FRAME.value];
 
     // print("CHUNK", chunk.length);
 
@@ -63,32 +65,61 @@ function onChunkReceived(chunk) {
 
     let lastBytePtr = null;
 
-    let secondByteBuffer = null;
-    lastBytePtr = WASM.EXPORTS.demodulate(startPtr + ((Math.floor(N/2) + (N % 2)) * 4), Math.floor(N/2) + (N % 2), bytesPtr);
-    secondByteBuffer = WASM.MEMORY.slice(bytesPtr, lastBytePtr+1);
-
-    let firstByteBuffer = null;
+    let leftByteBuffer = null;
     lastBytePtr = WASM.EXPORTS.demodulate(startPtr, Math.floor(N/2), bytesPtr);
-    firstByteBuffer = WASM.MEMORY.slice(bytesPtr, lastBytePtr+1);
+    leftByteBuffer = WASM.MEMORY.slice(bytesPtr, lastBytePtr+1);
 
-    print("first", firstByteBuffer)
-    print("second", secondByteBuffer)
+    WASM.MEMORY_F32.set(chunk, realPtr>>2);
 
-    const controlByte = WASM.MEMORY[bytesPtr];
+    // Make sure the imginary array is filled with zeros.
+    // Also fill the rest of the real array padded to the nearest power of 2.
+    WASM.MEMORY_F32.fill(0, (imagPtr - (N - chunk.length) * 4)>>2, bytesPtr>>2);
+
+    let rightByteBuffer = null;
+    lastBytePtr = WASM.EXPORTS.demodulate(startPtr + ((Math.floor(N/2) + (N % 2)) * 4), Math.floor(N/2) + (N % 2), bytesPtr);
+    rightByteBuffer = WASM.MEMORY.slice(bytesPtr, lastBytePtr+1);
+
+    const buffers = {left: leftByteBuffer, right: rightByteBuffer};
+    if (buffers[choosing][0] == CONST.CBYTE.NDA ||
+        (buffers[choosing][0] == CONST.CBYTE.SXT && rxRecording) ||
+        (buffers[choosing][0] == CONST.CBYTE.EXT && !rxRecording)
+    ) {
+        // The chosen buffer has no data so choose the other one.
+        choosing = choosing == "right" ? "left" : "right";
+    }
+
+    const buffer = buffers[choosing];
+
+    // print("LEFT", leftByteBuffer);
+    // print("RIGHT", rightByteBuffer);
+
+    const controlByte = buffer[0];
     if (controlByte == CONST.CBYTE.NDA) {
         if (rxRecording) {
-            print("NO DATA");
+            // This should not happen, it means that both buffers are empty.
+            // Add at least some zeros to the result so we do not mess up the bits.
+            bitsReceivedStr += "0" * BITS_PER_FRAME;
+            noDataCounter += 1;
+            if (noDataCounter >= 3) {
+                console.log("No data for three consecutive chunks. Ending transmission.");
+                rxRecording = false;
+                noDataCounter = 0;
+                bitsReceivedStr = "";
+                return;
+            }
         }
         return; // No data available
     } else if (controlByte == CONST.CBYTE.SXT) {
         if (!rxRecording) {
             console.log("Transmission started!");
+            noDataCounter = 0;
             rxRecording = true;
             // receivedBytes.fill(0);
         }
     } else if (controlByte == CONST.CBYTE.EXT) {
         if (rxRecording) {
             console.log("Transmission ended!");
+            noDataCounter = 0;
             rxRecording = false;
 
             if (bitsReceivedStr.trim().length == 0) {
@@ -98,7 +129,7 @@ function onChunkReceived(chunk) {
             }
 
 
-            print(bitsReceivedStr);
+            // print(bitsReceivedStr);
             // Convert the bits received string to an actual string
             let receivedString = new TextDecoder("utf-8").decode(
                 new Uint8Array(bitsReceivedStr.match(/.{1,8}/g).map(byte => parseInt(byte, 2)).filter(byte => !isNaN(byte)))
@@ -115,10 +146,10 @@ function onChunkReceived(chunk) {
 
         }
     } else if (controlByte == CONST.CBYTE.DXA) {
+        noDataCounter = 0;
         if (rxRecording) {
-            const BITS_PER_FRAME = WASM.MEMORY[WASM.EXPORTS.BITS_PER_FRAME.value];
             // let bitsLeft = BITS_PER_FRAME;
-            for (let ptr = bytesPtr+1; ptr <= lastBytePtr; ptr++) {
+            for (let ptr = 1; ptr <= lastBytePtr - bytesPtr; ptr++) {
                 // print("PTR", ptr);
                 // if (receivedBytes.length == 0 || currentBit > 7) {
                 //     currentBit = 0;
@@ -129,9 +160,8 @@ function onChunkReceived(chunk) {
                 // const nBitsToAdd = Math.min(8, bitsLeft)
                 // const nBitsActuallyAdded = Math.min(nBitsToAdd, freeBitsInCurByte);
                 // const nBitsLeftOut = nBitsToAdd - nBitsActuallyAdded;
-                const bitsToAdd = WASM.MEMORY[ptr];
+                const bitsToAdd = buffer[ptr];
                 const bitsToAddStr = bitsToAdd.toString(2).padStart(BITS_PER_FRAME, '0');
-                print(bitsToAddStr)
                 bitsReceivedStr += bitsToAddStr;
 
                 // receivedBytes[currentByte] |= bitsToAdd >> nBitsLeftOut;
@@ -201,7 +231,8 @@ async function tryStartRecording() {
             const inputBuffer = e.inputBuffer.getChannelData(0);
 
 
-            const SAMPLE_CHUNK_SIZE = 9600;// WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
+            // 5500
+            const SAMPLE_CHUNK_SIZE = 5700;// WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
             const BITS_PER_FRAME = WASM.MEMORY_U32[WASM.EXPORTS.BITS_PER_FRAME/4];
 
             if (chunkBuffer.length < SAMPLE_CHUNK_SIZE) {
@@ -363,6 +394,10 @@ function createUserMessage(author, alignment, content) {
         // Double clicking the text bubble will copy the message.
         navigator.clipboard.writeText(msg.content);
     });
+
+    const iconElement = document.createElement("i");
+    iconElement.className = alignment === "left" ? "fa-regular fa-circle-right" : "fa-regular fa-circle-left";
+    msg.appendChild(iconElement)
 
     const info = document.createElement("div");
     info.classList.add("msg-info");
@@ -687,3 +722,6 @@ window.addEventListener("wasm-library-failed", () => {
     wasmLoaded = false;
     displayMessageAtBottom(systemMessage("Načítavanie externých knižníc zlyhalo. Pokúste sa reštartovať stránku, alebo ak chyba pretrváva, kontaktujte správcu.", "error"));
 });
+
+// TODO: Add some DB and save/load the messages sent and received.
+displayMessageAtBottom(createUserMessage("SOMEONE", CONST.ALIGMENT_LEFT, "TITIIIDJOIWNDJNWJNDNWODNWNDONWODNOWNODOWDN"))
