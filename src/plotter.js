@@ -110,61 +110,110 @@ export function plotFFT(canvas, frequencies, magnitudes, waterfall) {
         },
         options: {
             responsive: true,
+            legend: {
+                display: false,
+            },
             scales: {
-                x: {
+                xAxes: [{
                     title: {
                         display: true,
                         text: 'Frekvencia [Hz]',
                     },
-                },
+                    gridLines: {
+                        color: "rgba(0, 0, 0, 0)",
+                    },
+                }],
                 yAxes: [{
                     title: {
                         display: true,
                         text: 'Magnitúda [dB]',
                     },
+                    gridLines: {
+                        color: "rgba(0, 0, 0, 0)",
+                    },
+                    display: false,
                     min: 0, // Set minimum magnitude (adjust as needed)
                     max: 100,    // Set maximum magnitude (adjust as needed)
-                    callback: function(value, index, values) {
-                        return '$' + value;
-                    }
                 }],
             },
         },
     });
 }
 
+export function drawFFT(canvas, frequencies, magnitudes) {
+    const ctx = canvas.getContext('2d');
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Set up graph dimensions
+    const barWidth = canvas.width / frequencies.length;
+    let x = 0;
+
+    for (let i = 0; i < frequencies.length; i++) {
+        const barHeight = Math.min(magnitudes[i] / 255 * canvas.height, canvas.height - 1);
+
+        // Set color for the bars
+        ctx.fillStyle = `rgb(${barHeight + 50}, 50, 200)`;
+        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+
+        x += barWidth;
+    }
+
+    requestAnimationFrame(drawFFT);
+}
+
+
 
 export function plotFFTWaterfall(canvas, frequencies, magnitudes, options = {}) {
     const ctx = canvas.getContext('2d');
 
+    // High-DPI scaling for crisp rendering
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    canvas.width = canvas.clientWidth * devicePixelRatio;
+    canvas.height = canvas.clientHeight * devicePixelRatio;
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+
+    // Disable image smoothing for sharp edges
+    ctx.imageSmoothingEnabled = false;
+
     // Configuration options
     const {
-        maxRows = 100, // Maximum number of rows in the waterfall
-        colorScale = (value) => `rgba(0, 0, 255, ${value})`, // Function to map magnitude to color
+        colorScale = (value) => `rgba(${Math.round(255 * value)}, ${Math.round(255 * (1 - value))}, 128, ${value})`,
+        magnitudeScaling = 'log', // 'linear' or 'log'
+        noiseFloor = 0.005, // Minimum magnitude value to visualize
     } = options;
 
     if (!canvas.waterfallData) {
         canvas.waterfallData = [];
-        canvas.height = maxRows; // Adjust canvas height for rows
     }
 
+    // Normalize and scale magnitudes
+    const scaledMagnitudes = magnitudes.map(mag => {
+        let scaledValue = mag;
+        if (magnitudeScaling === 'log') {
+            scaledValue = Math.log10(Math.max(mag, noiseFloor)) / Math.log10(1 / noiseFloor);
+        }
+        return Math.max(0, Math.min(1, scaledValue)); // Clamp to [0, 1]
+    });
+
+    // Set dimensions for bins and rows
+    const numRows = canvas.height; // One row per vertical pixel
+    const binWidth = canvas.width / frequencies.length; // Subpixel precision
+    const rowHeight = canvas.height / numRows; // Subpixel precision
+
     // Add the new FFT data to the waterfall
-    canvas.waterfallData.push(magnitudes);
-    if (canvas.waterfallData.length > maxRows) {
-        canvas.waterfallData.shift(); // Remove oldest data to maintain maxRows
+    canvas.waterfallData.push(scaledMagnitudes);
+    if (canvas.waterfallData.length > numRows) {
+        canvas.waterfallData.shift(); // Remove oldest data to maintain numRows
     }
 
     // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Calculate the width of each frequency bin
-    const binWidth = canvas.width / frequencies.length;
-    const rowHeight = canvas.height / maxRows;
-
     // Render the waterfall
     canvas.waterfallData.forEach((row, rowIndex) => {
         row.forEach((magnitude, binIndex) => {
-            const color = colorScale(magnitude); // Map magnitude to color
+            const color = colorScale(magnitude); // Map scaled magnitude to color
             ctx.fillStyle = color;
             ctx.fillRect(
                 binIndex * binWidth,         // X position

@@ -19,15 +19,9 @@ const TAB_BUTTONS = document.getElementsByClassName("tab-button")
 
 
 function closeTab(tab) {
-    if (tab.style.display != "none") {
-        tab._old_style_display = tab.style.display
-        tab.style.display = "none"; // Hide the tab
-        tab.style.visibility = "hidden";
-    }
-
+    tab.classList.remove("opened");
     tab.button.classList.remove("selected"); // Unselect the tab button
 }
-
 
 function closeAllTabs() {
     for (const tab of TABS) {
@@ -38,14 +32,11 @@ function closeAllTabs() {
 let currentTab = null;
 function openTab(tab) {
     closeAllTabs(); // Make sure we are the only opened tab.
-    if (tab.style.display == "none") {
-        tab.style.display = tab._old_style_display || "flex"; // Show the tab.
-        tab.style.visibility = "visible";
-    }
 
     currentTab = tab;
     refreshLocalStorageData()
 
+    tab.classList.add("opened"); // Open the tab.
     tab.button.classList.add("selected"); // Select the tab button.
 }
 
@@ -132,6 +123,7 @@ for (const label of document.getElementsByTagName("label")) {
     if (label.htmlFor != "") {
         const checkbox = document.getElementById(label.htmlFor)
         if (checkbox != null && checkbox.tagName == "INPUT" && checkbox.type == "checkbox") {
+            print("FOUND CHECKBOX: ", checkbox);
             label.classList.add("unselectable");
         }
     }

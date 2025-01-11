@@ -192,6 +192,7 @@ async function tryStartRecording() {
     if (!navigator.mediaDevices) {
         // There are no mediaDevices, PANIC!!
         displayMessageAtBottom(systemMessage("Žiadne zvukové médium na príjem správ nebolo nájdené! Správy nebudú príjimané.", "warn"));
+        window.dispatchEvent(new Event('recording-start-failed'));
         return;
     }
 
@@ -256,6 +257,8 @@ async function tryStartRecording() {
 
         mediaStreamSource.connect(recorder);
         recorder.connect(context.destination);
+
+        window.dispatchEvent(new Event('recording-started'));
     }).catch(function (e) { // This should handle even the revokes and everything.
         // TODO: Handle not being allowed to record audio.
         // console.error(e);
@@ -267,6 +270,8 @@ async function tryStartRecording() {
         } else {
             displayMessageAtBottom(systemMessage("Chyba pri nahrávaní: " + e.message, "error"))
         }
+
+        window.dispatchEvent(new Event('recording-start-failed'));
     });
 }
 

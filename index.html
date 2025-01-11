@@ -77,7 +77,7 @@
 
         <!-- TODO ADD CACHING -->
         <div id="tabs">
-            <div id="tab-chat" class="tab">
+            <div id="tab-chat" class="tab loaded default">
                 <!-- Chat Display Area -->
                 <main id="message-area" class="message-area"></main>
 
@@ -98,7 +98,7 @@
                 </form>
             </div>
 
-            <div id="tab-config" class="tab">
+            <div id="tab-config" class="tab loaded">
                 <header class="tab-header">
                     <div class="tab-header-title">Nastavenia</div>
                 </header>
@@ -150,13 +150,17 @@
                     <div class="tab-header-title">Spektogram</div>
                 </header>
 
+                <div class="tab-loading-indicator">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Načítavam...</span>
+                </div>
+
                 <div id="graph-controls">
                     <span id="peak-frequency"></span>
 
                     <label>
-                        <span id="peak-frequency"></span>
                         <input id="waterfall-checkbox" type="checkbox">
-                        <span>Waterfall</span>
+                        <label for="waterfall-checkbox" class="unselectable">Vodopád</label>
                     </label>
                 </div>
 
@@ -170,7 +174,7 @@
                 </div>
             </div>
 
-            <div id="tab-oscillator" class="tab">
+            <div id="tab-oscillator" class="tab loaded">
                 <header class="tab-header">
                     <div class="tab-header-title">Oscilátor</div>
                 </header>

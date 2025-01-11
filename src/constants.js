@@ -6,17 +6,12 @@
 export const ALIGMENT_RIGHT = "right"
 export const ALIGMENT_LEFT  = "left";
 
-export const THEMES = {
-    LIGHT: {
-        index: 1,
-        name: "light-scheme",
-        icon: "fas fa-sun",
-    },
-    DARK: {
-        index: 2,
-        name: "dark-scheme",
-        icon: "fas fa-moon",
-    }
+export const TAB = {
+    GRAPH: "tab-graph",
+    CONFIG: "tab-config",
+    CHAT: "tab-chat",
+    OSCILLATOR: "tab-oscillator",
+
 }
 
 export const DARK_MODE = "dark-scheme";

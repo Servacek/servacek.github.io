@@ -196,7 +196,7 @@ body::-webkit-scrollbar-thumb {
     flex: 1 1 auto;
     display: flex; /* Optional: Makes content alignment easier */
     flex-direction: column;
-    visibility: hidden;
+    /* visibility: hidden; */
     overflow: hidden; /* Prevent the .tab widget from overflowing */
     margin: 20px;
     margin-bottom: 0px;
@@ -207,6 +207,43 @@ body::-webkit-scrollbar-thumb {
     font-size: 1.5em;
     margin-bottom: 20px;
 }
+
+.tab:not(.loaded) > :not(.tab-header) {
+    visibility: hidden;
+}
+
+.tab .tab-header {
+    visibility: visible;
+}
+
+/* .tab .active * {
+    display: flex;
+    visibility: visible;
+} */
+
+.tab.loaded .tab-loading-indicator {
+    display: none;
+}
+
+.tab:not(.loaded) .tab-loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 20px;
+    visibility: visible;
+}
+
+.tab:not(.loaded) .tab-loading-indicator i {
+    margin-right: 10px;
+}
+
+.tab:not(.opened) {
+    display: none;
+}
+
+/********************************/
+/********      FOOTER    ********/
+/********************************/
 
 footer {
     font-size: 6pt;

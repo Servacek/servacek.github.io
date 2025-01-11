@@ -1,25 +1,33 @@
-import { plotFFT, plotFFTWaterfall, plotWaveform } from '../plotter.js';
+import { plotFFT, plotFFTWaterfall, plotWaveform, drawFFT } from '../plotter.js';
 import * as WASM from "../bindings.js";
+import * as CONST from "../constants.js";
 
-const fft_graph = document.getElementById("fft-result-graph");
-const waveform_graph = document.getElementById("input-waveform-graph");
+const TAB = document.getElementById(CONST.TAB.GRAPH);
 
-function onClick() {fft_graph.paused = !fft_graph.paused;}
+const fftGraph = document.getElementById("fft-result-graph");
+const waveformGraph = document.getElementById("input-waveform-graph");
+const waterfallCheckbox = document.getElementById("waterfall-checkbox");
 
-fft_graph.addEventListener("click", onClick)
-waveform_graph.addEventListener("click", onClick)
+function onClick() {fftGraph.paused = !fftGraph.paused;}
+
+fftGraph.addEventListener("click", onClick)
+waveformGraph.addEventListener("click", onClick)
 
 
 function onProcessAudioFFTChunk(e) {
     // Do only update the canvas when we are visible and running!
-    if (fft_graph.paused == true || fft_graph.offsetParent == null) {
+    if (fftGraph.paused == true || fftGraph.offsetParent == null) {
         return;
+    }
+
+    if (TAB.classList.contains("loaded") == false) {
+        TAB.classList.add("loaded");
     }
 
     const inputBuffer = e.detail.inputBuffer;
 
     // Plot the input waveform we are computing the FFT from.
-    plotWaveform(waveform_graph, inputBuffer);
+    plotWaveform(waveformGraph, inputBuffer);
 
     const fftSize = inputBuffer.length; // Should already be a power of 2.
     const startPtr = WASM.MEMORY_STACK_START;
@@ -57,7 +65,12 @@ function onProcessAudioFFTChunk(e) {
     //const filteredMagnitudesDB = filteredMagnitudes.map((mag) => 20 * Math.log10(mag));
 
     // Plot the result
-    plotFFT(fft_graph, filteredFrequencies, filteredMagnitudes);
+    // plotFFT(fft_graph, filteredFrequencies, filteredMagnitudes);
+    if (waterfallCheckbox.checked) {
+        plotFFTWaterfall(fftGraph, filteredFrequencies, filteredMagnitudes);
+    } else {
+        drawFFT(fftGraph, filteredFrequencies, filteredMagnitudes);
+    }
 
     const peakMagnitudeIndex = filteredMagnitudes.indexOf(Math.max(...filteredMagnitudes));
     const peakFrequency = filteredFrequencies[peakMagnitudeIndex];
@@ -71,6 +84,5 @@ function onProcessAudioFFTChunk(e) {
     //     rxData.value = res;
     // }
 }
-
 
 window.addEventListener("audioprocess", onProcessAudioFFTChunk);
