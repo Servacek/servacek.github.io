@@ -233,7 +233,7 @@ async function tryStartRecording() {
 
 
             // 5500
-            const SAMPLE_CHUNK_SIZE = 5700;// WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
+            const SAMPLE_CHUNK_SIZE = 5200;// WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
             const BITS_PER_FRAME = WASM.MEMORY_U32[WASM.EXPORTS.BITS_PER_FRAME/4];
 
             if (chunkBuffer.length < SAMPLE_CHUNK_SIZE) {
