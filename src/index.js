@@ -140,8 +140,13 @@ function onChunkReceived(chunk) {
             if (receivedString && receivedString.trim().length > 0) {
                 const authorId = buffer[1];
                 // TODO: Add option to assign names to IDs in the config tab.
-                const authorName = authorId.toString()
-                displayMessageAtBottom(createUserMessage(authorName, CONST.ALIGMENT_LEFT, receivedString.trim()))
+                const nameInput = document.getElementById("channel-name-" + authorId);
+                const authorName = nameInput ? nameInput.value.trim() : authorId.toString();
+
+                const msg = createUserMessage(authorName, CONST.ALIGMENT_LEFT, receivedString.trim())
+                const COLORS = ["#ffcccc", "#99ff99", "#9999ff", "#ffdd66", "#ffcce5"];
+                msg.icon.style.color = msg.username.style.color = COLORS[authorId || (COLORS.length - 1)];
+                displayMessageAtBottom(msg);
             }
 
 
@@ -351,7 +356,7 @@ sendMessageButtonWithIcon.addEventListener("click", () => sendMessageButton.clic
 
 // Handle enter key, when SHIFT is pressed do not send the message.
 inputArea.addEventListener("keydown", event => {
-    if (event.keyCode === 13 && !event.shiftKey) {
+    if (sendMessageButtonWithIcon.offsetParent == null && event.keyCode === 13 && !event.shiftKey) {
         event.preventDefault();
         inputArea.submit();
     }
@@ -405,12 +410,14 @@ function createUserMessage(author, alignment, content) {
 
     const iconElement = document.createElement("i");
     iconElement.className = alignment === "left" ? "fa-regular fa-circle-right" : "fa-regular fa-circle-left";
+    msg.icon = iconElement;
     msg.appendChild(iconElement)
 
     const info = document.createElement("div");
     info.classList.add("msg-info");
 
     const name = document.createElement("div");
+    msg.username = name;
     name.classList.add("msg-info-name");
     name.textContent = author;
 
@@ -721,10 +728,15 @@ window.addEventListener("user-logged", () => {
     initStateUpdate();
 });
 
-window.addEventListener("wasm-library-loaded", () => {
+
+////////// WASM
+
+WASM.load();
+
+WASM.requiresLoadedWASM(() => {
     wasmLoaded = true;
     initStateUpdate();
-});
+})
 
 window.addEventListener("wasm-library-failed", () => {
     wasmLoaded = false;

@@ -18,6 +18,7 @@ export const DARK_MODE = "dark-scheme";
 export const MAKE_DARK_MODE_DEFAULT = true;
 
 export const MAX_USERNAME_LENGTH = 16;
+export const MAX_CHANNELNAME_LENGTH = 16;
 export const MAX_MESSAGE_LENGTH = 128;
 
 export const SYSTEM_MESSAGE_ICONS = {

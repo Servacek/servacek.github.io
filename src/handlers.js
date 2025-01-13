@@ -123,7 +123,6 @@ for (const label of document.getElementsByTagName("label")) {
     if (label.htmlFor != "") {
         const checkbox = document.getElementById(label.htmlFor)
         if (checkbox != null && checkbox.tagName == "INPUT" && checkbox.type == "checkbox") {
-            print("FOUND CHECKBOX: ", checkbox);
             label.classList.add("unselectable");
         }
     }
@@ -146,7 +145,7 @@ function refreshLocalStorageData() {
             localStorage.setItem("current-tab", currentTab.id);
         }
 
-        print("SAVING: ", localStorage.getItem("theme"));
+        window.dispatchEvent(new CustomEvent('refresh-local-storage'));
     }
 }
 

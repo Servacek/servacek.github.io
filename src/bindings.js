@@ -51,6 +51,14 @@ export function getOutputBuffer(length) {
     return Array.from(new Float32Array(EXPORTS.memory.buffer, OUTPUT_BUFFER_PTR, length));
 }
 
+export function requiresLoadedWASM(block) {
+    if (LOADED == true) {
+        block();
+    } else {
+        window.addEventListener("wasm-library-loaded", block);
+    }
+}
+
 ////////////////////////////////////
 
 async function _init() {
@@ -138,12 +146,14 @@ async function _init() {
     // console.log(new Float32Array(ADMOD.memory.buffer, 66680, 4));
 }
 
-_init().then(() => {
-    LOADED = true;
-    console.info("Successfully initialized WASM!");
-    window.dispatchEvent(new CustomEvent("wasm-library-loaded"));
-}).catch((error) => {
-    LOADED = false;
-    console.error("Failed to initialize WASM:", error);
-    window.dispatchEvent(new CustomEvent("wasm-library-failed"));
-});
+export function load() {
+    _init().then(() => {
+        LOADED = true;
+        console.info("Successfully initialized WASM!");
+        print(window.dispatchEvent(new CustomEvent("wasm-library-loaded")));
+    }).catch((error) => {
+        LOADED = false;
+        console.error("Failed to initialize WASM:", error);
+        window.dispatchEvent(new CustomEvent("wasm-library-failed"));
+    });
+}

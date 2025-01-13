@@ -109,12 +109,6 @@ playButton.addEventListener("click", () => {
 })
 
 
-if (WASM.LOADED) {
+WASM.requiresLoadedWASM(() => {
     onSlidersUpdated()
-} else {
-    window.addEventListener("wasm-library-loaded", () => {
-        // Initialize
-        // Make sure we have WASM available.
-        onSlidersUpdated()
-    })
-}
+})
