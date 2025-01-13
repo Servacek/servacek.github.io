@@ -196,8 +196,8 @@ body::-webkit-scrollbar-thumb {
     flex: 1 1 auto;
     display: flex; /* Optional: Makes content alignment easier */
     flex-direction: column;
-    /* visibility: hidden; */
-    overflow-y: auto;
+    overflow-y: scroll; /* Use 'scroll' to ensure scrollbars appear on mobile */
+    -webkit-overflow-scrolling: touch; /* Enable momentum scrolling on iOS */
     margin: 20px;
     margin-bottom: 0px;
 }

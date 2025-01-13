@@ -144,7 +144,7 @@ function onChunkReceived(chunk) {
                 const authorName = nameInput ? nameInput.value.trim() : authorId.toString();
 
                 const msg = createUserMessage(authorName, CONST.ALIGMENT_LEFT, receivedString.trim())
-                const COLORS = ["#ffcccc", "#99ff99", "#9999ff", "#ffdd66", "#ffcce5"];
+                const COLORS = ["#ffc107", "#ff6e6e", "#8bc34a", "#45a2ff", "grey"];
                 msg.icon.style.color = msg.username.style.color = COLORS[authorId || (COLORS.length - 1)];
                 displayMessageAtBottom(msg);
             }
