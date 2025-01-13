@@ -138,7 +138,10 @@ function onChunkReceived(chunk) {
             bitsReceivedStr = "";
 
             if (receivedString && receivedString.trim().length > 0) {
-                displayMessageAtBottom(createUserMessage("DROID", CONST.ALIGMENT_LEFT, receivedString.trim()))
+                const authorId = buffer[1];
+                // TODO: Add option to assign names to IDs in the config tab.
+                const authorName = authorId.toString()
+                displayMessageAtBottom(createUserMessage(authorName, CONST.ALIGMENT_LEFT, receivedString.trim()))
             }
 
 
@@ -233,7 +236,7 @@ async function tryStartRecording() {
 
 
             // 5500
-            const SAMPLE_CHUNK_SIZE = 5200;// WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
+            const SAMPLE_CHUNK_SIZE = 5700;// WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
             const BITS_PER_FRAME = WASM.MEMORY_U32[WASM.EXPORTS.BITS_PER_FRAME/4];
 
             if (chunkBuffer.length < SAMPLE_CHUNK_SIZE) {
