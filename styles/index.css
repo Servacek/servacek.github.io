@@ -197,7 +197,7 @@ body::-webkit-scrollbar-thumb {
     display: flex; /* Optional: Makes content alignment easier */
     flex-direction: column;
     /* visibility: hidden; */
-    overflow: hidden; /* Prevent the .tab widget from overflowing */
+    overflow-y: auto;
     margin: 20px;
     margin-bottom: 0px;
 }
