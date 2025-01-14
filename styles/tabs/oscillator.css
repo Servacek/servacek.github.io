@@ -18,7 +18,7 @@
 
 #oscillator-waveform-graph {
     display: flex;
-    flex: 0 0 auto;
+    flex: 1 1 auto;
     /* max-width: 60vw; */
     max-width: 100%;
     align-items: center;

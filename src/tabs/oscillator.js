@@ -55,7 +55,7 @@ function onWaveformParamsChanged(frequency, amplitude, phase) {
     //     new_waveform[i] = a * Math.sin(2 * Math.PI * f * i / SAMPLING_RATE + p);
     // }
     waveform = new_waveform;
-    plotWaveform(oscillatorWaveform, new_waveform.slice(0, Math.round(period * SAMPLING_RATE) + additionalSamples), f)
+    // plotWaveform(oscillatorWaveform, new_waveform.slice(0, Math.round(period * SAMPLING_RATE) + additionalSamples), f)
 
     if (bufferSource) {
         onWaveformUpdated();

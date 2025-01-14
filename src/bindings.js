@@ -35,20 +35,12 @@ export let
 
 // Fills the input memory buffer with the provided bytes from the byte array
 export function fillInputBuffer(byteArray) {
-    let i = 0;
-    for (const byte of byteArray) {
-        MEMORY[INPUT_BUFFER_PTR + i] = byte;
-        i++;
-    }
+    MEMORY.set(byteArray, INPUT_BUFFER_PTR);
 }
 
 // Returns the bytearray of the output buffer
 export function getOutputBuffer(length) {
-    // console.log("getOutputBuffer");
-    // console.log("AVAILABLE MEMORY", EXPORTS.memory.buffer.byteLength);
-    // console.log("BYTES NEEDED", OUTPUT_BUFFER_PTR + length*4);
-    // console.log("MAX FLOATS IN OUTPUT", EXPORTS.memory.buffer.byteLength / 4)
-    return Array.from(new Float32Array(EXPORTS.memory.buffer, OUTPUT_BUFFER_PTR, length));
+    return new Float32Array(EXPORTS.memory.buffer, OUTPUT_BUFFER_PTR, length).slice();
 }
 
 export function requiresLoadedWASM(block) {
@@ -129,21 +121,6 @@ async function _init() {
             globalsCount += 1;
         }
     }
-
-    //console.log(globalsCount);
-
-    // console.log(instance)
-    // console.log(EXPORTS)
-
-    // Array of bytes allocated by the program.
-    // let memory_array = new Int8Array(ADMOD.memory.buffer);
-
-    // memory_array[9892] = 0b01001001;
-
-    // console.log(memory_array.length);
-
-    // console.log(ADMOD.modulate(9892, 1, 66680));
-    // console.log(new Float32Array(ADMOD.memory.buffer, 66680, 4));
 }
 
 export function load() {

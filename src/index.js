@@ -6,6 +6,8 @@ import * as WASM from './bindings.js';
 import * as CONST from './constants.js';
 import {nextPow2, max, formatDate} from './utils.js';
 
+import { plotWaveform } from './plotter.js';
+
 // TODO: Disable the send button when no content is available.
 // Provide the send button also on mobile in some minimazed form.
 
@@ -139,6 +141,12 @@ function onChunkReceived(chunk) {
 
             if (receivedString && receivedString.trim().length > 0) {
                 const authorId = buffer[1];
+                const MAX_USERS = MEMORY[EXPORTS.MAX_USERS.value];
+                if (!authorId || authorId >= MAX_USERS) {
+                    console.log("Invalid author ID:", authorId);
+                    return;
+                }
+
                 // TODO: Add option to assign names to IDs in the config tab.
                 const nameInput = document.getElementById("channel-name-" + authorId);
                 const authorName = nameInput ? nameInput.value.trim() : authorId.toString();
@@ -513,15 +521,19 @@ function createSelfMessage(text, image=null) {
     // TODO: Possible compression here?
     const textByteArray = textEndcoder.encode(text)
     WASM.fillInputBuffer(textByteArray);
-    //console.log(WASM.INPUT_BUFFER_PTR, contentByteArray.length, WASM.OUTPUT_BUFFER_PTR);
-    //const wf_length = WASM.ADMOD.modulate(WASM.INPUT_BUFFER_PTR, contentByteArray.length, WASM.OUTPUT_BUFFER_PTR);
-    //console.log("C-cko nam vratilo svoje pole!!! DLZKA VLNY:", wf_length);
     message.waveform = WASM.getOutputBuffer(WASM.EXPORTS.modulate(
         WASM.INPUT_BUFFER_PTR, textByteArray.length, WASM.OUTPUT_BUFFER_PTR
     ));
-    //console.log(new Float32Array(WASM.ADMOD.memory.buffer, 441000, 1));
-    // *4 because we need to account for the float size. One pointer every 4 bytes.
-    //console.log(new Float32Array(WASM.ADMOD.memory.buffer, 4096 + 441000 * 4, 1));
+
+    const oscillatorWaveform = document.getElementById("oscillator-waveform");
+    const displayWaveform = [];
+    for (let i = 0; i < message.waveform.length; i += CONST.SAMPLES_PER_FRAME) {
+        for (let j = i; j < i + 100; j++) {
+            displayWaveform.push(message.waveform[j]);
+        }
+    }
+    plotWaveform(oscillatorWaveform, displayWaveform);
+
 
     return message;
 }

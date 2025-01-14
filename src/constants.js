@@ -29,7 +29,7 @@ export const SYSTEM_MESSAGE_ICONS = {
 };
 
 export const SYSTEM_MESSAGE_COLORS = {
-    ["info"]: "#45a2ff", // light blue
+    ["info"]: "#2ba5f7", // light blue
     ["warn"]: "#ffc107", // yellow orange
     ["error"]: "#ff6e6e", // light red
     ["welcome"]: "#8bc34a" // light green
