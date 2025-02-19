@@ -142,7 +142,7 @@ function onChunkReceived(chunk) {
             if (receivedString && receivedString.trim().length > 0) {
                 const authorId = buffer[1];
                 const MAX_USERS = WASM.MEMORY[WASM.EXPORTS.MAX_USERS.value];
-                if (autohorId < 0 || authorId >= MAX_USERS) {
+                if (authorId < 0 || authorId >= MAX_USERS) {
                     console.log("Invalid author ID:", authorId);
                     return;
                 }
