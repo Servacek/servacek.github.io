@@ -40,6 +40,46 @@ let noDataCounter = 0;
 let port;
 let writer;
 
+function onTransmissionEnded(buffer) {
+    console.log("Transmission ended!");
+    noDataCounter = 0;
+    rxRecording = false;
+
+    if (bitsReceivedStr.trim().length == 0) {
+        console.log("NO BITS RECEIVED\n");
+        bitsReceivedStr = "";
+        return;
+    }
+
+
+    // print(bitsReceivedStr);
+    // Convert the bits received string to an actual string
+    let receivedString = new TextDecoder("utf-8").decode(
+        new Uint8Array(bitsReceivedStr.match(/.{1,8}/g).map(byte => parseInt(byte, 2)).filter(byte => !isNaN(byte)))
+    );
+    console.log("Received String:", receivedString);
+    bitsReceivedStr = "";
+
+    if (receivedString && receivedString.trim().length > 0) {
+        const authorId = buffer[1];
+        const MAX_USERS = WASM.MEMORY[WASM.EXPORTS.MAX_USERS.value];
+        // if (authorId < 0 || authorId >= MAX_USERS) {
+        //     console.log("Invalid author ID:", authorId);
+        //     return;
+        // }
+
+        // TODO: Add option to assign names to IDs in the config tab.
+        const nameInput = document.getElementById("channel-name-" + authorId);
+        //const authorName = nameInput ? nameInput.value.trim() : String(authorId);
+        const authorName = "Starý Medvěd";
+
+        const msg = createUserMessage(authorName, CONST.ALIGMENT_LEFT, receivedString.trim())
+        const COLORS = ["#ffc107", "#ff6e6e", "#8bc34a", "#45a2ff", "grey"];
+        msg.icon.style.color = msg.username.style.color = COLORS[authorId || (COLORS.length - 1)];
+        displayMessageAtBottom(msg);
+    }
+}
+
 function onChunkReceived(chunk) {
     // TODO: Replace this with a dedicated CONFIG object.
     const BITS_PER_FRAME = WASM.MEMORY[WASM.EXPORTS.BITS_PER_FRAME.value];
@@ -107,10 +147,11 @@ function onChunkReceived(chunk) {
             noDataCounter += 1;
             if (noDataCounter >= 3) {
                 console.log("No data for three consecutive chunks. Ending transmission.");
-                rxRecording = false;
-                noDataCounter = 0;
-                bitsReceivedStr = "";
-                return;
+                onTransmissionEnded(buffer)
+                // rxRecording = false;
+                // noDataCounter = 0;
+                // bitsReceivedStr = "";
+                //return;
             }
         }
         return; // No data available
@@ -123,47 +164,7 @@ function onChunkReceived(chunk) {
         }
     } else if (controlByte == CONST.CBYTE.EXT) {
         if (rxRecording) {
-            console.log("Transmission ended!");
-            noDataCounter = 0;
-            rxRecording = false;
-
-            if (bitsReceivedStr.trim().length == 0) {
-                console.log("NO BITS RECEIVED\n");
-                bitsReceivedStr = "";
-                return;
-            }
-
-
-            // print(bitsReceivedStr);
-            // Convert the bits received string to an actual string
-            let receivedString = new TextDecoder("utf-8").decode(
-                new Uint8Array(bitsReceivedStr.match(/.{1,8}/g).map(byte => parseInt(byte, 2)).filter(byte => !isNaN(byte)))
-            );
-            console.log("Received String:", receivedString);
-            bitsReceivedStr = "";
-
-            if (receivedString && receivedString.trim().length > 0) {
-                const authorId = buffer[1];
-                const MAX_USERS = WASM.MEMORY[WASM.EXPORTS.MAX_USERS.value];
-                // if (authorId < 0 || authorId >= MAX_USERS) {
-                //     console.log("Invalid author ID:", authorId);
-                //     return;
-                // }
-
-                // TODO: Add option to assign names to IDs in the config tab.
-                const nameInput = document.getElementById("channel-name-" + authorId);
-                //const authorName = nameInput ? nameInput.value.trim() : String(authorId);
-                const authorName = "Starý Medvěd";
-
-                const msg = createUserMessage(authorName, CONST.ALIGMENT_LEFT, receivedString.trim())
-                const COLORS = ["#ffc107", "#ff6e6e", "#8bc34a", "#45a2ff", "grey"];
-                msg.icon.style.color = msg.username.style.color = COLORS[authorId || (COLORS.length - 1)];
-                displayMessageAtBottom(msg);
-            }
-
-
-            // Display the received message here:
-
+            onTransmissionEnded(buffer);
         }
     } else if (controlByte == CONST.CBYTE.DXA) {
         noDataCounter = 0;
