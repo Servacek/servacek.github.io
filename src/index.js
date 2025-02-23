@@ -114,21 +114,21 @@ function onChunkReceived(chunk) {
             }
         }
         return; // No data available
-    } else if (controlByte == CONST.CBYTE.SXT) {
+    } else if ((controlByte == CONST.CBYTE.SXT || controlByte == CONST.CBYTE.EXT) && !rxRecording) {
         if (!rxRecording) {
             console.log("Transmission started!");
             noDataCounter = 0;
             rxRecording = true;
             // receivedBytes.fill(0);
         }
-    } else if (controlByte == CONST.CBYTE.EXT) {
+    } else if ((controlByte == CONST.CBYTE.EXT || controlByte == CONST.CBYTE.SXT) && rxRecording) {
         if (rxRecording) {
             console.log("Transmission ended!");
             noDataCounter = 0;
             rxRecording = false;
 
             if (bitsReceivedStr.trim().length == 0) {
-                console.log("NO BITS RECEIVED");
+                console.log("NO BITS RECEIVED\n");
                 bitsReceivedStr = "";
                 return;
             }
@@ -152,7 +152,7 @@ function onChunkReceived(chunk) {
 
                 // TODO: Add option to assign names to IDs in the config tab.
                 const nameInput = document.getElementById("channel-name-" + authorId);
-                const authorName = nameInput ? nameInput.value.trim() : authorId.toString();
+                const authorName = nameInput ? nameInput.value.trim() : String(authorId);
 
                 const msg = createUserMessage(authorName, CONST.ALIGMENT_LEFT, receivedString.trim())
                 const COLORS = ["#ffc107", "#ff6e6e", "#8bc34a", "#45a2ff", "grey"];
@@ -182,6 +182,7 @@ function onChunkReceived(chunk) {
                 const bitsToAdd = buffer[ptr];
                 const bitsToAddStr = bitsToAdd.toString(2).padStart(BITS_PER_FRAME, '0');
                 bitsReceivedStr += bitsToAddStr;
+                print("RECEIVED BITS: ", bitsToAddStr)
 
                 // receivedBytes[currentByte] |= bitsToAdd >> nBitsLeftOut;
                 // currentBit += nBitsActuallyAdded
@@ -218,9 +219,12 @@ async function tryStartRecording() {
     navigator.mediaDevices.getUserMedia({
         audio: {
             // TODO: Try these out?
-            echoCancellation: { ideal: false },
-            autoGainControl: { ideal: false },
-            noiseSuppression:{ ideal: false },
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+            googEchoCancellation: false,
+            googNoiseSuppression: false,
+            googAutoGainControl: false,
         },
         video: false,
     }).then(function(stream) {
@@ -238,6 +242,9 @@ async function tryStartRecording() {
 
         // https://ciiec.buap.mx/FFT.js/
         // rounded to nearest power of 2
+
+        // const sampleRate = context.sampleRate;
+        // console.log(`Sample rate set to ${sampleRate} Hz.`);
 
         // Let the system decide which bufferSize is the best for us,
         // since we are using our own buffer anyways.
@@ -333,11 +340,7 @@ function sendNextMessage() {
             clearInterval(intervalId);
             currentlySendingMessage.dispatchEvent(new Event("sent"));
             currentlySendingMessage = null;
-            if (messagesToSend.length <= 0) {
-                if (!writer) {
-                    alert("Connect to Arduino first!");
-                    return;
-                }
+            if (messagesToSend.length <= 0 && writer) {
                 setTimeout(() => {
                     const encoder = new TextEncoder();
                     writer.write(encoder.encode("0"));
@@ -358,15 +361,10 @@ function sendMessage(message) {
         message.progressBar.style.display = "none";
     })
 
-    if (!currentlySendingMessage) {
-        if (!writer) {
-            alert("Connect to Arduino first!");
-            return;
-        }
+    if (!currentlySendingMessage && writer) {
         const encoder = new TextEncoder();
         writer.write(encoder.encode("1"));
         setTimeout(() => sendNextMessage(), 700);
-        return
     } else {
         sendNextMessage();
     }
