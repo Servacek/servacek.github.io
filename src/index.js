@@ -114,14 +114,14 @@ function onChunkReceived(chunk) {
             }
         }
         return; // No data available
-    } else if ((controlByte == CONST.CBYTE.SXT || controlByte == CONST.CBYTE.EXT) && !rxRecording) {
+    } else if (controlByte == CONST.CBYTE.SXT) {
         if (!rxRecording) {
             console.log("Transmission started!");
             noDataCounter = 0;
             rxRecording = true;
             // receivedBytes.fill(0);
         }
-    } else if ((controlByte == CONST.CBYTE.EXT || controlByte == CONST.CBYTE.SXT) && rxRecording) {
+    } else if (controlByte == CONST.CBYTE.EXT) {
         if (rxRecording) {
             console.log("Transmission ended!");
             noDataCounter = 0;
@@ -145,14 +145,15 @@ function onChunkReceived(chunk) {
             if (receivedString && receivedString.trim().length > 0) {
                 const authorId = buffer[1];
                 const MAX_USERS = WASM.MEMORY[WASM.EXPORTS.MAX_USERS.value];
-                if (authorId < 0 || authorId >= MAX_USERS) {
-                    console.log("Invalid author ID:", authorId);
-                    return;
-                }
+                // if (authorId < 0 || authorId >= MAX_USERS) {
+                //     console.log("Invalid author ID:", authorId);
+                //     return;
+                // }
 
                 // TODO: Add option to assign names to IDs in the config tab.
                 const nameInput = document.getElementById("channel-name-" + authorId);
-                const authorName = nameInput ? nameInput.value.trim() : String(authorId);
+                //const authorName = nameInput ? nameInput.value.trim() : String(authorId);
+                const authorName = "Starý Medvěd";
 
                 const msg = createUserMessage(authorName, CONST.ALIGMENT_LEFT, receivedString.trim())
                 const COLORS = ["#ffc107", "#ff6e6e", "#8bc34a", "#45a2ff", "grey"];
@@ -258,8 +259,9 @@ async function tryStartRecording() {
             const inputBuffer = e.inputBuffer.getChannelData(0);
 
 
-            // 5500
-            const SAMPLE_CHUNK_SIZE = 5700;// WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
+            const userAgent = navigator.userAgent.toLowerCase();
+            // WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
+            const SAMPLE_CHUNK_SIZE = userAgent.includes('firefox') ? 5700 : 7300;
             const BITS_PER_FRAME = WASM.MEMORY_U32[WASM.EXPORTS.BITS_PER_FRAME/4];
 
             if (chunkBuffer.length < SAMPLE_CHUNK_SIZE) {
