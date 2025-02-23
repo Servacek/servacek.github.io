@@ -37,6 +37,9 @@ let noDataCounter = 0;
 // let currentByte = -1;
 // let currentBit = 0;
 
+let port;
+let writer;
+
 function onChunkReceived(chunk) {
     // TODO: Replace this with a dedicated CONFIG object.
     const BITS_PER_FRAME = WASM.MEMORY[WASM.EXPORTS.BITS_PER_FRAME.value];
@@ -330,6 +333,17 @@ function sendNextMessage() {
             clearInterval(intervalId);
             currentlySendingMessage.dispatchEvent(new Event("sent"));
             currentlySendingMessage = null;
+            if (messagesToSend.length <= 0) {
+                if (!writer) {
+                    alert("Connect to Arduino first!");
+                    return;
+                }
+                setTimeout(() => {
+                    const encoder = new TextEncoder();
+                    writer.write(encoder.encode("0"));
+                }, 700)
+            }
+
             sendNextMessage();
         };
     }
@@ -337,14 +351,25 @@ function sendNextMessage() {
 
 function sendMessage(message) {
     messagesToSend.push(message)
-    sendNextMessage();
-
     message.progressBar.style.display = "block";
     message.bubble.classList.add("sending");
     message.addEventListener("sent", () => {
         message.bubble.classList.remove("sending");
         message.progressBar.style.display = "none";
     })
+
+    if (!currentlySendingMessage) {
+        if (!writer) {
+            alert("Connect to Arduino first!");
+            return;
+        }
+        const encoder = new TextEncoder();
+        writer.write(encoder.encode("1"));
+        setTimeout(() => sendNextMessage(), 700);
+        return
+    } else {
+        sendNextMessage();
+    }
 }
 
 // TODO: This is temporary until we decide on the design.
@@ -740,6 +765,15 @@ window.addEventListener("user-logged", () => {
     initStateUpdate();
 });
 
+document.getElementById("connect-usb-device-button").addEventListener("click", async () => {
+    try {
+        port = await navigator.serial.requestPort(); // Request serial port
+        await port.open({ baudRate: 9600 }); // Open port at 9600 baud
+        writer = port.writable.getWriter();
+    } catch (error) {
+        console.error("Error connecting to serial port:", error);
+    }
+});
 
 ////////// WASM
 
