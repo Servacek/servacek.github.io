@@ -19,6 +19,8 @@ const inputBar = document.getElementById("input-bar");
 const messageArea = document.getElementById("message-area");
 const sendMessageButton = document.getElementById("send-message-button");
 
+const bufferSizeInput = document.getElementById("buffer-size-input");
+
 ////////////////////
 
 var messagesToSend = [];
@@ -260,9 +262,8 @@ async function tryStartRecording() {
             const inputBuffer = e.inputBuffer.getChannelData(0);
 
 
-            const userAgent = navigator.userAgent.toLowerCase();
             // WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
-            const SAMPLE_CHUNK_SIZE = userAgent.includes('firefox') ? 5700 : 7300;
+            const SAMPLE_CHUNK_SIZE = bufferSizeInput.value;
             const BITS_PER_FRAME = WASM.MEMORY_U32[WASM.EXPORTS.BITS_PER_FRAME/4];
 
             if (chunkBuffer.length < SAMPLE_CHUNK_SIZE) {
