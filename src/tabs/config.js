@@ -4,6 +4,7 @@ import * as CONST from "../constants.js";
 
 const bitsPerFrameSlider = document.getElementById("bits-per-frame");
 const bitsPerFrameDisplay = document.getElementById("bits-per-frame-display");
+const bufferSizeInput = document.getElementById("buffer-size-input");
 
 const channelIdSelect = document.getElementById("channel-id-select");
 const channelNameList = document.getElementById("channel-name-list");
@@ -12,6 +13,7 @@ const channelNameList = document.getElementById("channel-name-list");
 function saveConfig() {
     localStorage.setItem("bitsPerFrame", bitsPerFrameSlider.value);
     localStorage.setItem("channelId", channelIdSelect.value);
+    localStorage.setItem("bufferSize", bufferSizeInput.value);
 
     const MAX_USERS = MEMORY[EXPORTS.MAX_USERS.value];
     for (let i = 0; i < MAX_USERS; i++) {
@@ -26,6 +28,13 @@ function loadConfig() {
         bitsPerFrameSlider.value = bits;
         bitsPerFrameDisplay.innerText = bits;
     }
+
+    const savedBufferSize = localStorage.getItem("bufferSize");
+    if (savedBufferSize !== null) {
+        bufferSizeInput.value = savedBufferSize;
+    } else {
+        bufferSizeInput.value = (navigator.userAgent.includes("Firefox")) ? 5300 : 7300;
+    }
 }
 
 loadConfig();
@@ -35,6 +44,11 @@ function onConfigurationUpdated() {
     // We always have to recalculate the dynamic configurations.
     EXPORTS.recalc_conf();
 }
+
+bufferSizeInput.addEventListener("input", (event) => {
+    onConfigurationUpdated();
+    saveConfig();
+})
 
 
 bitsPerFrameSlider.addEventListener("input", (event) => {

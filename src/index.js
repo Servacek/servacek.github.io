@@ -19,6 +19,8 @@ const inputBar = document.getElementById("input-bar");
 const messageArea = document.getElementById("message-area");
 const sendMessageButton = document.getElementById("send-message-button");
 
+const bufferSizeInput = document.getElementById("buffer-size-input");
+
 ////////////////////
 
 var messagesToSend = [];
@@ -36,6 +38,49 @@ let choosing = "left";
 let noDataCounter = 0;
 // let currentByte = -1;
 // let currentBit = 0;
+
+let port;
+let writer;
+
+function onTransmissionEnded(buffer) {
+    console.log("Transmission ended!");
+    noDataCounter = 0;
+    rxRecording = false;
+
+    if (bitsReceivedStr.trim().length == 0) {
+        console.log("NO BITS RECEIVED\n");
+        bitsReceivedStr = "";
+        return;
+    }
+
+
+    // print(bitsReceivedStr);
+    // Convert the bits received string to an actual string
+    let receivedString = new TextDecoder("utf-8").decode(
+        new Uint8Array(bitsReceivedStr.match(/.{1,8}/g).map(byte => parseInt(byte, 2)).filter(byte => !isNaN(byte)))
+    );
+    console.log("Received String:", receivedString);
+    bitsReceivedStr = "";
+
+    if (receivedString && receivedString.trim().length > 0) {
+        const authorId = buffer[1];
+        const MAX_USERS = WASM.MEMORY[WASM.EXPORTS.MAX_USERS.value];
+        // if (authorId < 0 || authorId >= MAX_USERS) {
+        //     console.log("Invalid author ID:", authorId);
+        //     return;
+        // }
+
+        // TODO: Add option to assign names to IDs in the config tab.
+        const nameInput = document.getElementById("channel-name-" + authorId);
+        //const authorName = nameInput ? nameInput.value.trim() : String(authorId);
+        const authorName = "Starý Medvěd";
+
+        const msg = createUserMessage(authorName, CONST.ALIGMENT_LEFT, receivedString.trim())
+        const COLORS = ["#ffc107", "#ff6e6e", "#8bc34a", "#45a2ff", "grey"];
+        msg.icon.style.color = msg.username.style.color = COLORS[authorId || (COLORS.length - 1)];
+        displayMessageAtBottom(msg);
+    }
+}
 
 function onChunkReceived(chunk) {
     // TODO: Replace this with a dedicated CONFIG object.
@@ -104,10 +149,11 @@ function onChunkReceived(chunk) {
             noDataCounter += 1;
             if (noDataCounter >= 3) {
                 console.log("No data for three consecutive chunks. Ending transmission.");
-                rxRecording = false;
-                noDataCounter = 0;
-                bitsReceivedStr = "";
-                return;
+                onTransmissionEnded(buffer)
+                // rxRecording = false;
+                // noDataCounter = 0;
+                // bitsReceivedStr = "";
+                //return;
             }
         }
         return; // No data available
@@ -120,46 +166,7 @@ function onChunkReceived(chunk) {
         }
     } else if (controlByte == CONST.CBYTE.EXT) {
         if (rxRecording) {
-            console.log("Transmission ended!");
-            noDataCounter = 0;
-            rxRecording = false;
-
-            if (bitsReceivedStr.trim().length == 0) {
-                console.log("NO BITS RECEIVED");
-                bitsReceivedStr = "";
-                return;
-            }
-
-
-            // print(bitsReceivedStr);
-            // Convert the bits received string to an actual string
-            let receivedString = new TextDecoder("utf-8").decode(
-                new Uint8Array(bitsReceivedStr.match(/.{1,8}/g).map(byte => parseInt(byte, 2)).filter(byte => !isNaN(byte)))
-            );
-            console.log("Received String:", receivedString);
-            bitsReceivedStr = "";
-
-            if (receivedString && receivedString.trim().length > 0) {
-                const authorId = buffer[1];
-                const MAX_USERS = MEMORY[EXPORTS.MAX_USERS.value];
-                if (!authorId || authorId >= MAX_USERS) {
-                    console.log("Invalid author ID:", authorId);
-                    return;
-                }
-
-                // TODO: Add option to assign names to IDs in the config tab.
-                const nameInput = document.getElementById("channel-name-" + authorId);
-                const authorName = nameInput ? nameInput.value.trim() : authorId.toString();
-
-                const msg = createUserMessage(authorName, CONST.ALIGMENT_LEFT, receivedString.trim())
-                const COLORS = ["#ffc107", "#ff6e6e", "#8bc34a", "#45a2ff", "grey"];
-                msg.icon.style.color = msg.username.style.color = COLORS[authorId || (COLORS.length - 1)];
-                displayMessageAtBottom(msg);
-            }
-
-
-            // Display the received message here:
-
+            onTransmissionEnded(buffer);
         }
     } else if (controlByte == CONST.CBYTE.DXA) {
         noDataCounter = 0;
@@ -179,6 +186,7 @@ function onChunkReceived(chunk) {
                 const bitsToAdd = buffer[ptr];
                 const bitsToAddStr = bitsToAdd.toString(2).padStart(BITS_PER_FRAME, '0');
                 bitsReceivedStr += bitsToAddStr;
+                print("RECEIVED BITS: ", bitsToAddStr)
 
                 // receivedBytes[currentByte] |= bitsToAdd >> nBitsLeftOut;
                 // currentBit += nBitsActuallyAdded
@@ -215,9 +223,12 @@ async function tryStartRecording() {
     navigator.mediaDevices.getUserMedia({
         audio: {
             // TODO: Try these out?
-            echoCancellation: { ideal: false },
-            autoGainControl: { ideal: false },
-            noiseSuppression:{ ideal: false },
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+            googEchoCancellation: false,
+            googNoiseSuppression: false,
+            googAutoGainControl: false,
         },
         video: false,
     }).then(function(stream) {
@@ -236,6 +247,9 @@ async function tryStartRecording() {
         // https://ciiec.buap.mx/FFT.js/
         // rounded to nearest power of 2
 
+        // const sampleRate = context.sampleRate;
+        // console.log(`Sample rate set to ${sampleRate} Hz.`);
+
         // Let the system decide which bufferSize is the best for us,
         // since we are using our own buffer anyways.
         const bufferSize = 0//2048;//Math.pow(2, Math.floor(Math.log2(SAMPLE_CHUNK_SIZE)));
@@ -248,8 +262,8 @@ async function tryStartRecording() {
             const inputBuffer = e.inputBuffer.getChannelData(0);
 
 
-            // 5500
-            const SAMPLE_CHUNK_SIZE = 5700;// WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
+            // WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
+            const SAMPLE_CHUNK_SIZE = bufferSizeInput.value;
             const BITS_PER_FRAME = WASM.MEMORY_U32[WASM.EXPORTS.BITS_PER_FRAME/4];
 
             if (chunkBuffer.length < SAMPLE_CHUNK_SIZE) {
@@ -330,6 +344,13 @@ function sendNextMessage() {
             clearInterval(intervalId);
             currentlySendingMessage.dispatchEvent(new Event("sent"));
             currentlySendingMessage = null;
+            if (messagesToSend.length <= 0 && writer) {
+                setTimeout(() => {
+                    const encoder = new TextEncoder();
+                    writer.write(encoder.encode("0"));
+                }, 700)
+            }
+
             sendNextMessage();
         };
     }
@@ -337,14 +358,20 @@ function sendNextMessage() {
 
 function sendMessage(message) {
     messagesToSend.push(message)
-    sendNextMessage();
-
     message.progressBar.style.display = "block";
     message.bubble.classList.add("sending");
     message.addEventListener("sent", () => {
         message.bubble.classList.remove("sending");
         message.progressBar.style.display = "none";
     })
+
+    if (!currentlySendingMessage && writer) {
+        const encoder = new TextEncoder();
+        writer.write(encoder.encode("1"));
+        setTimeout(() => sendNextMessage(), 700);
+    } else {
+        sendNextMessage();
+    }
 }
 
 // TODO: This is temporary until we decide on the design.
@@ -740,6 +767,15 @@ window.addEventListener("user-logged", () => {
     initStateUpdate();
 });
 
+document.getElementById("connect-usb-device-button").addEventListener("click", async () => {
+    try {
+        port = await navigator.serial.requestPort(); // Request serial port
+        await port.open({ baudRate: 9600 }); // Open port at 9600 baud
+        writer = port.writable.getWriter();
+    } catch (error) {
+        console.error("Error connecting to serial port:", error);
+    }
+});
 
 ////////// WASM
 

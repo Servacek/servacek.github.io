@@ -155,6 +155,13 @@
                         <input id="personalized-ads-toggle" type="checkbox">
                     </label>
                 </div> -->
+
+                <label class="config-option">
+                    <span>Veľkosť Bufferu</span>
+                    <input id="buffer-size-input" type="number" min="0" max="20000" step="1" value="0">
+                </label>
+
+                <button id="connect-usb-device-button">Pripojiť USB</button>
             </div>
 
             <div id="tab-graph" class="tab">
@@ -225,7 +232,7 @@
 
         <!-- TODO: Add the version to the WASM file as an EXPORT constant and display it here after it loads. -->
         <!-- Footer (text is added upon library load.) -->
-        <footer class="unselectable">Preview v1.9<br>Powered by Tinnitus library v0.6</footer>
+        <footer class="unselectable">Preview v1.9p<br>Powered by Tinnitus library v0.6</footer>
     </section>
 
     <!-- Image Upload Modal -->
