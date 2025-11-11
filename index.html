@@ -93,7 +93,8 @@
 
                     <div id="right-input-toolbar">
                         <button id="send-message-button" type="button" disabled>Odoslať</button>
-                        <button id="send-message-button-with-icon" type="button" disabled><i class="fas fa-paper-plane"></i></button>
+                        <button id="send-message-button-with-icon" type="button" disabled><i
+                                class="fas fa-paper-plane"></i></button>
                     </div>
                 </form>
             </div>
@@ -104,6 +105,7 @@
                 </header>
 
                 <label class="config-option">
+                    <h3>Všeobecné</h3>
                     <span>Používateľské meno</span>
                     <input id="username-config-input" type="text" value="Anonymný" maxlength="16">
                     <div style="white-space: nowrap;">
@@ -161,7 +163,11 @@
                     <input id="buffer-size-input" type="number" min="0" max="20000" step="1" value="0">
                 </label>
 
-                <button id="connect-usb-device-button">Pripojiť USB</button>
+                <label class="config-sub-header">
+                    <h3>USB Zariadenia</h3>
+                    <div id="usb-device-info"></div>
+                    <button id="connect-usb-device-button" class="unpaired"></button>
+                <label>
             </div>
 
             <div id="tab-graph" class="tab">
@@ -201,20 +207,26 @@
                 <div class="oscillator-controls">
                     <label class="config-option">
                         <span>Frekvencia [Hz]</span><br>
-                        <input id="frequency-slider" class="oscillator-slider" type="range" min="1" max="20000" step="1" value="440">
-                        <br><input id="frequency-slider-display" class="oscillator-slider-display" type="number" value="440" min="1" max="20000" step="1">
+                        <input id="frequency-slider" class="oscillator-slider" type="range" min="1" max="20000" step="1"
+                            value="440">
+                        <br><input id="frequency-slider-display" class="oscillator-slider-display" type="number"
+                            value="440" min="1" max="20000" step="1">
                     </label>
 
                     <label class="config-option">
                         <span>Amplitúda [%]</span><br>
-                        <input id="amplitude-slider" class="oscillator-slider" type="range" min="1" max="100" step="1" value="25">
-                        <br><input id="amplitude-slider-display" class="oscillator-slider-display" type="number" value="25" min="1" max="100" step="1">
+                        <input id="amplitude-slider" class="oscillator-slider" type="range" min="1" max="100" step="1"
+                            value="25">
+                        <br><input id="amplitude-slider-display" class="oscillator-slider-display" type="number"
+                            value="25" min="1" max="100" step="1">
                     </label>
 
                     <label class="config-option">
                         <span>Fáza [°]</span><br>
-                        <input id="phase-slider" class="oscillator-slider" type="range" min="0" max="360" step="1" value="0">
-                        <br><input id="phase-slider-display" class="oscillator-slider-display" type="number" value="0" min="0" max="360" step="1">
+                        <input id="phase-slider" class="oscillator-slider" type="range" min="0" max="360" step="1"
+                            value="0">
+                        <br><input id="phase-slider-display" class="oscillator-slider-display" type="number" value="0"
+                            min="0" max="360" step="1">
                     </label>
                 </div>
 
@@ -254,7 +266,7 @@
     <div id="login-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <img src="assets/pigeon.png" alt="Holub Icon" width="72px", height="72px">
+                <img src="assets/pigeon.png" alt="Holub Icon" width="72px" , height="72px">
                 <div class="modal-header-title">Holub™</div>
             </div>
 
@@ -264,7 +276,8 @@
                         PREZÝVKA
                     </div>
                     <div class="field-input">
-                        <input id="username-input" type="text" class="username-input" placeholder="Ako ťa máme volať?" autocomplete="off">
+                        <input id="username-input" type="text" class="username-input" placeholder="Ako ťa máme volať?"
+                            autocomplete="off">
                     </div>
                 </div>
 
@@ -286,5 +299,12 @@
 <script type="module" src="src/bindings.js"></script>
 <script type="module" src="src/index.js"></script>
 <script type="module" src="src/handlers.js"></script>
+<script>
+    // Zobrazime tlacidlo pre pripojenie USB zariadenia len ak
+    // prehliadac podporuje WebUSB
+    if ("usb" in navigator) {
+        document.getElementById("connect-usb-device-button").style.display = 'block';
+    }
+</script>
 
 </html>

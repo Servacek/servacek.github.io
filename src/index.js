@@ -4,7 +4,7 @@
 // import {decodeBitsToString, getPeakFrequency} from './demodulator.js';
 import * as WASM from './bindings.js';
 import * as CONST from './constants.js';
-import {nextPow2, max, formatDate} from './utils.js';
+import { nextPow2, max, formatDate } from './utils.js';
 
 import { plotWaveform } from './plotter.js';
 
@@ -91,14 +91,14 @@ function onChunkReceived(chunk) {
     const N = nextPow2(chunk.length);
     const startPtr = WASM.MEMORY_STACK_START;
     const realPtr = startPtr;
-    const imagPtr = realPtr + N*4;
-    const bytesPtr = imagPtr + N*4;
+    const imagPtr = realPtr + N * 4;
+    const bytesPtr = imagPtr + N * 4;
 
-    WASM.MEMORY_F32.set(chunk, realPtr>>2);
+    WASM.MEMORY_F32.set(chunk, realPtr >> 2);
 
     // Make sure the imginary array is filled with zeros.
     // Also fill the rest of the real array padded to the nearest power of 2.
-    WASM.MEMORY_F32.fill(0, (imagPtr - (N - chunk.length) * 4)>>2, bytesPtr>>2);
+    WASM.MEMORY_F32.fill(0, (imagPtr - (N - chunk.length) * 4) >> 2, bytesPtr >> 2);
 
     // Assert that the real array is filled with the input chunk
     for (let i = 0; i < chunk.length; i++) {
@@ -113,20 +113,20 @@ function onChunkReceived(chunk) {
     let lastBytePtr = null;
 
     let leftByteBuffer = null;
-    lastBytePtr = WASM.EXPORTS.demodulate(startPtr, Math.floor(N/2), bytesPtr);
-    leftByteBuffer = WASM.MEMORY.slice(bytesPtr, lastBytePtr+1);
+    lastBytePtr = WASM.EXPORTS.demodulate(startPtr, Math.floor(N / 2), bytesPtr);
+    leftByteBuffer = WASM.MEMORY.slice(bytesPtr, lastBytePtr + 1);
 
-    WASM.MEMORY_F32.set(chunk, realPtr>>2);
+    WASM.MEMORY_F32.set(chunk, realPtr >> 2);
 
     // Make sure the imginary array is filled with zeros.
     // Also fill the rest of the real array padded to the nearest power of 2.
-    WASM.MEMORY_F32.fill(0, (imagPtr - (N - chunk.length) * 4)>>2, bytesPtr>>2);
+    WASM.MEMORY_F32.fill(0, (imagPtr - (N - chunk.length) * 4) >> 2, bytesPtr >> 2);
 
     let rightByteBuffer = null;
-    lastBytePtr = WASM.EXPORTS.demodulate(startPtr + ((Math.floor(N/2) + (N % 2)) * 4), Math.floor(N/2) + (N % 2), bytesPtr);
-    rightByteBuffer = WASM.MEMORY.slice(bytesPtr, lastBytePtr+1);
+    lastBytePtr = WASM.EXPORTS.demodulate(startPtr + ((Math.floor(N / 2) + (N % 2)) * 4), Math.floor(N / 2) + (N % 2), bytesPtr);
+    rightByteBuffer = WASM.MEMORY.slice(bytesPtr, lastBytePtr + 1);
 
-    const buffers = {left: leftByteBuffer, right: rightByteBuffer};
+    const buffers = { left: leftByteBuffer, right: rightByteBuffer };
     if (buffers[choosing][0] == CONST.CBYTE.NDA ||
         (buffers[choosing][0] == CONST.CBYTE.SXT && rxRecording) ||
         (buffers[choosing][0] == CONST.CBYTE.EXT && !rxRecording)
@@ -231,7 +231,7 @@ async function tryStartRecording() {
             googAutoGainControl: false,
         },
         video: false,
-    }).then(function(stream) {
+    }).then(function (stream) {
         const context = new AudioContext({
             latencyHint: "balanced",
             sampleRate: 48000,
@@ -264,7 +264,7 @@ async function tryStartRecording() {
 
             // WASM.MEMORY_U32[WASM.EXPORTS.SAMPLE_CHUNK_SIZE/4];
             const SAMPLE_CHUNK_SIZE = bufferSizeInput.value;
-            const BITS_PER_FRAME = WASM.MEMORY_U32[WASM.EXPORTS.BITS_PER_FRAME/4];
+            const BITS_PER_FRAME = WASM.MEMORY_U32[WASM.EXPORTS.BITS_PER_FRAME / 4];
 
             if (chunkBuffer.length < SAMPLE_CHUNK_SIZE) {
                 chunkBuffer.push(...inputBuffer);
@@ -281,7 +281,7 @@ async function tryStartRecording() {
             }
 
             window.dispatchEvent(new CustomEvent("audioprocess", {
-                "detail": {inputBuffer: inputBuffer}
+                "detail": { inputBuffer: inputBuffer }
             }));
         }
 
@@ -344,10 +344,14 @@ function sendNextMessage() {
             clearInterval(intervalId);
             currentlySendingMessage.dispatchEvent(new Event("sent"));
             currentlySendingMessage = null;
-            if (messagesToSend.length <= 0 && writer) {
-                setTimeout(() => {
-                    const encoder = new TextEncoder();
-                    writer.write(encoder.encode("0"));
+            if (messagesToSend.length <= 0 && port != null) {
+                setTimeout(async () => {
+                    if (!port.configuration)
+                        await port.selectConfiguration(1);
+
+                    await port.claimInterface(0);
+                    await port.controlTransferOut({ requestType: 'vendor', recipient: 'device', request: 2, value: 0, index: 0 });
+                    await port.controlTransferIn({requestType:'vendor',recipient:'device',request:2,value:0,index:0},16);
                 }, 700)
             }
 
@@ -356,7 +360,7 @@ function sendNextMessage() {
     }
 }
 
-function sendMessage(message) {
+async function sendMessage(message) {
     messagesToSend.push(message)
     message.progressBar.style.display = "block";
     message.bubble.classList.add("sending");
@@ -365,9 +369,14 @@ function sendMessage(message) {
         message.progressBar.style.display = "none";
     })
 
-    if (!currentlySendingMessage && writer) {
-        const encoder = new TextEncoder();
-        writer.write(encoder.encode("1"));
+    if (!currentlySendingMessage && port != null) {
+        if (!port.configuration)
+            await port.selectConfiguration(1);
+        await port.claimInterface(0);
+        await port.controlTransferOut({ requestType: 'vendor', recipient: 'device', request: 1, value: 0, index: 0 });
+        await port.controlTransferIn({requestType:'vendor',recipient:'device',request:1,value:0,index:0},16);
+        // const encoder = new TextEncoder();
+        // writer.write(encoder.encode("1"));
         setTimeout(() => sendNextMessage(), 700);
     } else {
         sendNextMessage();
@@ -377,7 +386,7 @@ function sendMessage(message) {
 // TODO: This is temporary until we decide on the design.
 const sendMessageButtonWithIcon = document.getElementById("send-message-button-with-icon");
 
-inputBar.oninput = function() {
+inputBar.oninput = function () {
     //this.style.height = 'auto'; // Reset height to calculate scrollHeight
     //this.style.height = `${Math.min(this.scrollHeight, 200)}px`; // Adjust 200 to match max-height
 
@@ -523,7 +532,7 @@ function getUsername() {
     return username.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function createSelfMessage(text, image=null) {
+function createSelfMessage(text, image = null) {
     const username = getUsername();
     const message = createUserMessage(username, CONST.ALIGMENT_RIGHT, text);
 
@@ -677,7 +686,7 @@ imageLabel.addEventListener('input', () => {
     sendButton.disabled = !imageLabel.value.trim();
 })
 
-function systemMessage(text, type, icon=null) {
+function systemMessage(text, type, icon = null) {
     const msg = createMessageBase();
     msg.classList.add("system-message", "system-message-" + type);
     msg.style.color = CONST.SYSTEM_MESSAGE_COLORS[type];
@@ -767,13 +776,50 @@ window.addEventListener("user-logged", () => {
     initStateUpdate();
 });
 
-document.getElementById("connect-usb-device-button").addEventListener("click", async () => {
-    try {
-        port = await navigator.serial.requestPort(); // Request serial port
-        await port.open({ baudRate: 9600 }); // Open port at 9600 baud
-        writer = port.writable.getWriter();
-    } catch (error) {
-        console.error("Error connecting to serial port:", error);
+// document.getElementById("connect-usb-device-button").addEventListener("click", async () => {
+//     try {
+//         port = await navigator.serial.requestPort(); // Request serial port
+//         await port.open();
+//         writer = port.writable.getWriter();
+//     } catch (error) {
+//         console.error("Error connecting to serial port:", error);
+//     }
+// });
+
+const button = document.getElementById("connect-usb-device-button");
+const infoDiv = document.getElementById("usb-device-info");
+
+button.addEventListener("click", async () => {
+    if (!port) {
+        // Connect USB
+        try {
+            port = await navigator.usb.requestDevice({
+                filters: [{ vendorId: 0x16c0, productId: 0x05dc }]
+            });
+
+            await port.open();
+            if (port.configuration === null) {
+                await port.selectConfiguration(1);
+            }
+            await port.claimInterface(0);
+
+            infoDiv.textContent = `Pripojené: ${port.productName} (Vendor ID: 0x${port.vendorId.toString(16)})`;
+            button.classList.add("paired");
+
+        } catch (error) {
+            console.error("Error connecting to USB device:", error);
+            port = null;
+        }
+    } else {
+        // Unpair USB
+        try {
+            await port.close();
+        } catch (err) {
+            console.warn("Error closing device:", err);
+        }
+        port = null;
+        infoDiv.textContent = "";
+        button.classList.remove("paired");
     }
 });
 
